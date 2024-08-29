@@ -34,7 +34,7 @@
             while ($a = $objPHPExcel->getActiveSheet()->getCell('A' . $i)->getCalculatedValue()) {
               if ($a =! "") {
                   $_DATOS_EXCEL[$i]['rit'] =trim($objPHPExcel->getActiveSheet()->getCell('A' . $i)->getCalculatedValue());
-                  $_DATOS_EXCEL[$i]['ruc'] =trim($objPHPExcel->getActiveSheet()->getCell('B' . $i)->getCalculatedValue());
+                  $_DATOS_EXCEL[$i]['rut'] =trim($objPHPExcel->getActiveSheet()->getCell('B' . $i)->getCalculatedValue());
                   $_DATOS_EXCEL[$i]['nombre'] = trim($objPHPExcel->getActiveSheet()->getCell('C' . $i)->getCalculatedValue());
                   $_DATOS_EXCEL[$i]['tipoLitigante'] = trim($objPHPExcel->getActiveSheet()->getCell('F' . $i)->getCalculatedValue()) ;
                   $_DATOS_EXCEL[$i]['usuarioEliminacion'] = trim($objPHPExcel->getActiveSheet()->getCell('G' . $i)->getCalculatedValue());

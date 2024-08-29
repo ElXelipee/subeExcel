@@ -51,5 +51,28 @@
       }
     }
     echo "Correctos: " . $correcto . " Errores: " . $error;
+  }
 
+  function eliminaLitigantes($matriz){
+    //var_dump($matriz);
+    global $conexion;
+    $error = "";
+    $correcto = "";
+    foreach ($matriz as $key) {
+      $sql = "DELETE FROM tbl_litigantes WHERE (rit = :rit AND ruc = :ruc AND nombre = :nombre AND tipoLitigante = :tipoLitigante AND motivoEliminacion = :motivoEliminacion)";
+      $stmt = $conexion->prepare($sql);
+      $stmt->bindParam(':rit', $key["rit"]);
+      $stmt->bindParam(':ruc', $key["ruc"]);
+      $stmt->bindParam(':nombre', $key["nombre"]);
+      $stmt->bindParam(':tipoLitigante', $key["tipoLitigante"]);
+      $stmt->bindParam(':motivoEliminacion', $key["motivoEliminacion"]);
+      if (!$stmt->execute()) {
+        // Manejar error
+        //echo "Error al insertar: " . $stmt->errorInfo()[2];
+        $error ++;
+      }else {
+        $correcto ++;
+      }
+    }
+    echo "Correctos: " . $correcto . " Errores: " . $error;
   }
