@@ -76,3 +76,28 @@
     }
     echo "Correctos: " . $correcto . " Errores: " . $error;
   }
+
+  function insertaHorasAudiencias($matriz){
+    global $conexion;
+    $error = 0;
+    $correcto =  0;
+    foreach ($matriz as $key) {
+      $sql = "INSERT INTO tbl_programacion_audiencias (fechaHora, sala, tipoBloque, juezAudiencia, cuentaZoom, estado) VALUES (:fechaHora, :sala, :tipoBloque, :juezAudiencia, :zoom, :estado)";
+      $stmt = $conexion->prepare($sql);
+      echo '<br>' . $key["fechaHora"];
+      $stmt->bindParam(':fechaHora', $key["fechaHora"]);
+      $stmt->bindParam(':sala', $key["sala"]);
+      $stmt->bindParam(':tipoBloque', $key["tipoBloque"]);
+      $stmt->bindParam(':juezAudiencia', $key["juezAudiencia"]);
+      $stmt->bindParam(':zoom', $key["zoom"]);
+      $stmt->bindParam(':estado', $key["estado"]);
+      if (!$stmt->execute()) {
+        // Manejar error
+        //echo "Error al insertar: " . $stmt->errorInfo()[2];
+        $error ++;
+      }else {
+        $correcto ++;
+      }
+    }
+    echo "Correctos: " . $correcto . " Errores: " . $error;
+  }
