@@ -1,0 +1,158 @@
+# ===================================
+# Archivo .gitignore para Cargador Excel
+# ===================================
+
+# Archivos Excel - No incluir en el repositorio
+*.xlsx
+*.xls
+*.xlsm
+*.xlsb
+*.xltx
+*.xltm
+*.csv
+
+# Archivos SQL - No incluir en el repositorio
+*.sql
+*.db
+*.sqlite
+*.sqlite3
+*.mdb
+*.accdb
+
+# Archivos de configuración con datos sensibles
+config.php
+database.php
+conexion.php
+settings.php
+.env
+
+# Archivos de log y temporales
+*.log
+*.tmp
+*.temp
+logs/
+temp/
+tmp/
+
+# Archivos de respaldo
+*.bak
+*.backup
+*~
+*.swp
+*.swo
+
+# Directorios de uploads/cargas
+uploads/
+files/
+archivos/
+excel/
+documentos/
+
+# Archivos del sistema operativo
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+
+# Linux
+*~
+.nfs*
+
+# Archivos de editores
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# PhpStorm/IntelliJ
+.idea/
+*.iml
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Notepad++
+*.bak
+
+# Archivos de dependencias (si usas composer)
+vendor/
+composer.lock
+
+# Archivos de Node.js (si usas npm)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos de cache
+cache/
+*.cache
+
+# Archivos de sesiones PHP
+sessions/
+
+# Archivos de error de PHP
+php_errors.log
+error_log
+
+# Archivos de configuración del servidor
+.htaccess.backup
+httpd.conf
+nginx.conf
+
+# Archivos comprimidos
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+
+# Archivos de imagen grandes (opcional - descomenta si no quieres versionar imágenes)
+# *.jpg
+# *.jpeg
+# *.png
+# *.gif
+# *.bmp
+# *.tiff
+
+# Archivos PDF (opcional - descomenta si no quieres versionar PDFs)
+# *.pdf
+
+# Carpetas específicas del proyecto
+/backups/
+/exports/
+/imports/
+/reports/
+
+# Archivos de prueba
+test_*.xlsx
+test_*.xls
+test_*.csv
+prueba_*.xlsx
+prueba_*.xls
+prueba_*.csv
+ejemplo_*.xlsx
+ejemplo_*.xls
+ejemplo_*.csv
+
+# ===================================
+# Notas importantes:
+# 
+# Este .gitignore está configurado para:
+# - Excluir TODOS los archivos Excel (.xlsx, .xls, .csv, etc.)
+# - Excluir TODOS los archivos SQL y bases de datos
+# - Excluir archivos de configuración sensibles
+# - Excluir archivos temporales y de log
+# - Excluir archivos del sistema operativo
+# 
+# Si necesitas incluir algún archivo Excel específico
+# como plantilla o ejemplo, puedes forzar su inclusión con:
+# git add -f archivo_especifico.xlsx
+# ===================================
