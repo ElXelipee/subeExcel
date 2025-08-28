@@ -677,8 +677,8 @@ class PHPExcel_Cell
 
 		//	We also use the language construct isset() rather than the more costly strlen() function to match the length of $pString
 		//		for improved performance
-		if (isset($pString{0})) {
-			if (!isset($pString{1})) {
+		if (isset($pString[0])) {
+			if (!isset($pString[1])) {
 				return $_columnLookup[$pString];
 			} elseif(!isset($pString[2])) {
 				return $_columnLookup[$pString[0]] * 26 + $_columnLookup[$pString[1]];
@@ -701,9 +701,9 @@ class PHPExcel_Cell
 		if ($pColumnIndex < 26) {
 			return chr(65 + $pColumnIndex);
 		} elseif ($pColumnIndex < 702) {
-			return chr(64 + ($pColumnIndex / 26)).chr(65 + $pColumnIndex % 26);
+			return chr(64 + intval($pColumnIndex / 26)).chr(65 + $pColumnIndex % 26);
 		}
-		return chr(64 + (($pColumnIndex - 26) / 676)).chr(65 + ((($pColumnIndex - 26) % 676) / 26)).chr(65 + $pColumnIndex % 26);
+		return chr(64 + intval(($pColumnIndex - 26) / 676)).chr(65 + intval((($pColumnIndex - 26) % 676) / 26)).chr(65 + $pColumnIndex % 26);
 	}
 
 	/**
