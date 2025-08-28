@@ -37,25 +37,39 @@
               if ($a != "") {
                   // Columna A: Fecha (convertir de d/m/Y a Y-m-d)
                   $fechaA = trim($objPHPExcel->getActiveSheet()->getCell('A' . $i)->getCalculatedValue());
-                  $_DATOS_EXCEL[$i]['fechaA'] = convertirFecha($fechaA);
+                  $_DATOS_EXCEL[$i]['fechaFirma'] = convertirFecha($fechaA);
                   
                   // Columna B: Fecha (convertir de d/m/Y a Y-m-d)
                   $fechaB = trim($objPHPExcel->getActiveSheet()->getCell('B' . $i)->getCalculatedValue());
-                  $_DATOS_EXCEL[$i]['fechaB'] = convertirFecha($fechaB);
+                  $_DATOS_EXCEL[$i]['fechaAudiencia'] = convertirFecha($fechaB);
                   
                   // Columna C: Texto normal
-                  $_DATOS_EXCEL[$i]['textoC'] = trim($objPHPExcel->getActiveSheet()->getCell('C' . $i)->getCalculatedValue());
+                  //En el siguiente caracter dejar solo el número
+
+                  $textoC = trim($objPHPExcel->getActiveSheet()->getCell('C' . $i)->getCalculatedValue());
+                  $_DATOS_EXCEL[$i]['sala'] = trim(str_replace('Sala N°', '', $textoC));
                   
                   // Columna D: Hora (convertir a H:i:s)
                   $horaD = trim($objPHPExcel->getActiveSheet()->getCell('D' . $i)->getCalculatedValue());
-                  $_DATOS_EXCEL[$i]['horaD'] = convertirHora($horaD);
-                  
-                  // Columna E: Texto normal
-                  $_DATOS_EXCEL[$i]['textoE'] = trim($objPHPExcel->getActiveSheet()->getCell('E' . $i)->getCalculatedValue());
+                  $_DATOS_EXCEL[$i]['horaInicio'] = convertirHora($horaD);
                   
                   // Columna F: Hora (convertir a H:i:s)
                   $horaF = trim($objPHPExcel->getActiveSheet()->getCell('F' . $i)->getCalculatedValue());
-                  $_DATOS_EXCEL[$i]['horaF'] = convertirHora($horaF);                  
+                  $_DATOS_EXCEL[$i]['horaTermino'] = convertirHora($horaF);      
+                  // Columna E: Texto normal
+                  $_DATOS_EXCEL[$i]['rit'] = trim($objPHPExcel->getActiveSheet()->getCell('H' . $i)->getCalculatedValue());
+                  $_DATOS_EXCEL[$i]['caj'] = trim($objPHPExcel->getActiveSheet()->getCell('I' . $i)->getCalculatedValue());
+                  $_DATOS_EXCEL[$i]['estadoCausa'] = trim($objPHPExcel->getActiveSheet()->getCell('J' . $i)->getCalculatedValue());
+                  $_DATOS_EXCEL[$i]['ruc'] = trim($objPHPExcel->getActiveSheet()->getCell('K' . $i)->getCalculatedValue());   
+                  $_DATOS_EXCEL[$i]['caratulado'] = trim($objPHPExcel->getActiveSheet()->getCell('M' . $i)->getCalculatedValue());
+                  $_DATOS_EXCEL[$i]['tipoAudiencia'] = trim($objPHPExcel->getActiveSheet()->getCell('N' . $i)->getCalculatedValue());
+                  $_DATOS_EXCEL[$i]['juez'] = trim($objPHPExcel->getActiveSheet()->getCell('O' . $i)->getCalculatedValue());
+                  $_DATOS_EXCEL[$i]['materia'] = trim($objPHPExcel->getActiveSheet()->getCell('P' . $i)->getCalculatedValue());
+                  $_DATOS_EXCEL[$i]['tipoNotificacion'] = trim($objPHPExcel->getActiveSheet()->getCell('Q' . $i)->getCalculatedValue());
+                  $_DATOS_EXCEL[$i]['estadoNotificacion'] = trim($objPHPExcel->getActiveSheet()->getCell('R' . $i)->getCalculatedValue());
+                  $_DATOS_EXCEL[$i]['enteNotificador'] = trim($objPHPExcel->getActiveSheet()->getCell('S' . $i)->getCalculatedValue());
+                  $_DATOS_EXCEL[$i]['consolidada'] = trim($objPHPExcel->getActiveSheet()->getCell('U' . $i)->getCalculatedValue());
+                  $_DATOS_EXCEL[$i]['videoconferencia'] = trim($objPHPExcel->getActiveSheet()->getCell('V' . $i)->getCalculatedValue());
                 $i++;
               } else {
                 break;
