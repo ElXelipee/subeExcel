@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Eliminar Litigantes - Cargador Excel</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+    <!-- Font Awesome para iconos -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .navbar-brand {
+        font-weight: bold;
+      }
+      .dropdown-item:hover {
+        background-color: #f8f9fa;
+      }
+      .dropdown-item.text-danger:hover {
+        background-color: #f8d7da;
+      }
+      
+      .card {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+      }
+      
+      .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+      }
+      
+      .form-control:focus {
+        border-color: var(--bs-danger);
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+      }
+      
+      .btn {
+        transition: all 0.2s ease-in-out;
+      }
+      
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+      
+      .uploading {
+        opacity: 0.7;
+        pointer-events: none;
+      }
+      
+      .file-info {
+        background: linear-gradient(135deg, #f8d7da 0%, #fdeaeb 100%);
+        border-left: 4px solid #dc3545;
+      }
+      
+      .requirements-card {
+        background: linear-gradient(135deg, #f8d7da 0%, #fdeaeb 100%);
+        border-left: 4px solid #dc3545;
+      }
+      
+      .warning-section {
+        background: linear-gradient(135deg, #fff3cd 0%, #fef7e3 100%);
+        border: 2px solid #ffc107;
+        border-radius: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="../index.html">
+          <i class="fas fa-file-excel"></i> Cargador Excel
+        </a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav me-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="../index.html">
+                <i class="fas fa-home"></i> Inicio
+              </a>
+            </li>
+            
+            <!-- Menú desplegable principal -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle active" href="#" id="cargaDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-upload"></i> Cargar Archivos
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="cargaDropdown">
+                <li><a class="dropdown-item" href="caratula.html">
+                  <i class="fas fa-file-alt"></i> Cargar Carátula
+                </a></li>
+                <li><a class="dropdown-item" href="cursos.html">
+                  <i class="fas fa-graduation-cap"></i> Cargar Cursos
+                </a></li>
+                <li><a class="dropdown-item" href="fechas-audiencias.html">
+                  <i class="fas fa-calendar-alt"></i> Cargar Fechas Audiencias
+                </a></li>
+                <li><a class="dropdown-item" href="libro-audiencias.html">
+                  <i class="fas fa-book"></i> Cargar Libro de Audiencias
+                </a></li>
+                <li><a class="dropdown-item" href="litigantes.html">
+                  <i class="fas fa-users"></i> Cargar Litigantes
+                </a></li>
+                <li><a class="dropdown-item" href="maiva-sml.html">
+                  <i class="fas fa-database"></i> Cargar Maiva SML
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item active text-danger" href="eliminar-litigantes.html">
+                  <i class="fas fa-trash-alt"></i> Eliminar Litigantes
+                </a></li>
+              </ul>
+            </li>
+            
+            <!-- Menú de herramientas -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="toolsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-tools"></i> Herramientas
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="toolsDropdown">
+                <li><a class="dropdown-item" href="#" onclick="showFileInfo()">
+                  <i class="fas fa-info-circle"></i> Información del Sistema
+                </a></li>
+                <li><a class="dropdown-item" href="#" onclick="clearCache()">
+                  <i class="fas fa-broom"></i> Limpiar Caché
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" onclick="showHelp()">
+                  <i class="fas fa-question-circle"></i> Ayuda
+                </a></li>
+              </ul>
+            </li>
+          </ul>
+          
+          <!-- Usuario/configuración -->
+          <ul class="navbar-nav">
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-user"></i> Usuario
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                <li><a class="dropdown-item" href="#">
+                  <i class="fas fa-cog"></i> Configuración
+                </a></li>
+                <li><a class="dropdown-item" href="#">
+                  <i class="fas fa-chart-bar"></i> Estadísticas
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#">
+                  <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="bg-light">
+      <div class="container">
+        <ol class="breadcrumb py-3 mb-0">
+          <li class="breadcrumb-item"><a href="../index.html"><i class="fas fa-home"></i> Inicio</a></li>
+          <li class="breadcrumb-item"><i class="fas fa-upload"></i> Cargar Archivos</li>
+          <li class="breadcrumb-item active" aria-current="page"><i class="fas fa-trash-alt text-danger"></i> Eliminar Litigantes</li>
+        </ol>
+      </div>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <div class="container mt-4">
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          
+          <!-- Encabezado -->
+          <div class="text-center mb-4">
+            <div class="display-1 text-danger mb-3">
+              <i class="fas fa-trash-alt"></i>
+            </div>
+            <h1 class="h2 text-danger">Eliminar Litigantes</h1>
+            <p class="text-muted">Elimina registros de litigantes del sistema mediante archivo Excel</p>
+          </div>
+
+          <!-- Sección de Advertencia -->
+          <div class="warning-section p-4 mb-4">
+            <div class="row align-items-center">
+              <div class="col-auto">
+                <i class="fas fa-exclamation-triangle fa-3x text-warning"></i>
+              </div>
+              <div class="col">
+                <h5 class="text-warning mb-2">⚠️ ADVERTENCIA: Operación Irreversible</h5>
+                <p class="mb-1"><strong>Esta acción eliminará permanentemente los registros de litigantes.</strong></p>
+                <p class="mb-0">Los datos eliminados <strong>NO</strong> se pueden recuperar. Asegúrese de tener respaldos antes de continuar.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Formulario Principal -->
+          <div class="card shadow-lg border-0 mb-4">
+            <div class="card-header bg-danger text-white">
+              <h5 class="card-title mb-0">
+                <i class="fas fa-upload"></i> Subir Archivo para Eliminar Litigantes
+              </h5>
+            </div>
+            <div class="card-body p-4">
+              <form action="../php/eliminaLitigantes.php" method="POST" class="formularioAjax" data-form="delete" autocomplete="off" enctype="multipart/form-data">
+                <div class="row">
+                  <div class="col-12">
+                    <div class="form-group mb-4">
+                      <label for="archivoEliminar" class="form-label h6">
+                        <i class="fas fa-file-excel text-success"></i> Seleccione archivo con litigantes a eliminar
+                      </label>
+                      <input class="form-control form-control-lg" name="archivoExcel" id="archivoEliminar" type="file" accept=".xlsx,.xls,.csv" required>
+                      <div class="form-text">
+                        <i class="fas fa-info-circle"></i> Formatos soportados: Excel (.xlsx, .xls) y CSV (.csv) | Tamaño máximo: 50 MB
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <input type="hidden" name="accion" value="ZWxpbWluYUxpdGlnYW50ZXM=">
+                
+                <div class="d-grid">
+                  <button type="submit" class="btn btn-danger btn-lg" name="eliminar">
+                    <i class="fas fa-trash-alt"></i> ELIMINAR Litigantes Seleccionados
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Información de Requisitos -->
+          <div class="card requirements-card mb-4">
+            <div class="card-body">
+              <h5 class="card-title">
+                <i class="fas fa-list-check text-danger"></i> Requisitos del Archivo
+              </h5>
+              <div class="row">
+                <div class="col-md-6">
+                  <h6><i class="fas fa-table text-info"></i> Estructura del Excel:</h6>
+                  <ul class="list-unstyled">
+                    <li><i class="fas fa-check text-success"></i> Primera fila debe contener encabezados</li>
+                    <li><i class="fas fa-check text-success"></i> Una columna con números de documento</li>
+                    <li><i class="fas fa-check text-success"></i> Sin celdas combinadas</li>
+                    <li><i class="fas fa-check text-success"></i> Documentos sin guiones ni puntos</li>
+                  </ul>
+                </div>
+                <div class="col-md-6">
+                  <h6><i class="fas fa-columns text-info"></i> Columnas Requeridas:</h6>
+                  <ul class="list-unstyled">
+                    <li><i class="fas fa-angle-right text-danger"></i> Número de documento (obligatorio)</li>
+                    <li><i class="fas fa-angle-right text-muted"></i> Nombre (opcional, para verificación)</li>
+                    <li><i class="fas fa-angle-right text-muted"></i> Expediente (opcional, para verificación)</li>
+                  </ul>
+                  <small class="text-muted">
+                    <i class="fas fa-info-circle"></i> Solo se requiere el número de documento para eliminar
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Información Adicional -->
+          <div class="row">
+            <div class="col-md-4">
+              <div class="card h-100 border-danger">
+                <div class="card-body text-center">
+                  <div class="text-danger mb-3">
+                    <i class="fas fa-ban fa-2x"></i>
+                  </div>
+                  <h6 class="card-title">Sin Recuperación</h6>
+                  <p class="card-text small text-muted">
+                    Los registros eliminados no se pueden recuperar. Esta operación es permanente.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card h-100 border-warning">
+                <div class="card-body text-center">
+                  <div class="text-warning mb-3">
+                    <i class="fas fa-history fa-2x"></i>
+                  </div>
+                  <h6 class="card-title">Registro de Auditoría</h6>
+                  <p class="card-text small text-muted">
+                    Se mantiene un registro de auditoría de todas las eliminaciones realizadas.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card h-100 border-info">
+                <div class="card-body text-center">
+                  <div class="text-info mb-3">
+                    <i class="fas fa-search fa-2x"></i>
+                  </div>
+                  <h6 class="card-title">Verificación</h6>
+                  <p class="card-text small text-muted">
+                    Sistema verifica que los registros existan antes de proceder con la eliminación.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-5 py-4 bg-light">
+      <div class="container">
+        <div class="row">
+          <div class="col-12 text-center">
+            <p class="text-muted mb-0">
+              <i class="fas fa-calendar-alt"></i> Última actualización: 28 Agosto, 2025 | 
+              <i class="fas fa-trash-alt text-danger"></i> Módulo de Eliminación | 
+              <i class="fas fa-headset"></i> Soporte crítico disponible
+            </p>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
+    
+    <script>
+      // Funciones para las opciones del menú
+      function showFileInfo() {
+        alert('Sistema de Carga de Archivos Excel - Eliminar Litigantes\nVersión: 1.0\nCompatible con: Excel 2007+, CSV\nMódulo: Eliminación de Registros\n\n⚠️ ADVERTENCIA: Este módulo elimina datos permanentemente.');
+      }
+      
+      function clearCache() {
+        if (confirm('¿Está seguro de que desea limpiar la caché del sistema?')) {
+          alert('Caché limpiada exitosamente');
+        }
+      }
+      
+      function showHelp() {
+        const helpText = `
+Ayuda - Eliminar Litigantes
+
+⚠️ ADVERTENCIA: OPERACIÓN IRREVERSIBLE
+
+PASOS:
+1. Prepare su archivo Excel con los números de documento a eliminar
+2. Verifique que el formato sea correcto (.xlsx, .xls o .csv)
+3. Seleccione el archivo usando el botón "Examinar"
+4. Confirme MÚLTIPLES VECES que desea eliminar
+5. Haga clic en "ELIMINAR Litigantes Seleccionados"
+
+COLUMNAS REQUERIDAS:
+- Número de documento (sin puntos ni guiones)
+
+COLUMNAS OPCIONALES (para verificación):
+- Nombre completo
+- Número de expediente
+
+IMPORTANTE:
+⚠️ Los datos eliminados NO se pueden recuperar
+⚠️ Haga respaldo antes de proceder
+⚠️ Verificar documentos antes de eliminar
+⚠️ Solo usuarios autorizados deben usar este módulo
+
+PROCESO:
+1. Sistema verifica que los registros existan
+2. Muestra lista de registros a eliminar
+3. Solicita confirmación final
+4. Elimina registros permanentemente
+5. Genera reporte de auditoría
+
+Para soporte crítico, contacte al administrador del sistema.
+
+USE CON EXTREMA PRECAUCIÓN.
+        `;
+        alert(helpText);
+      }
+      
+      // Validación de archivos específica para eliminación
+      function validateFile(input) {
+        const file = input.files[0];
+        const maxSize = 50 * 1024 * 1024; // 50 MB
+        
+        if (!file) return false;
+        
+        // Validar tamaño
+        if (file.size > maxSize) {
+          alert('⚠️ El archivo es demasiado grande.\n\nTamaño actual: ' + (file.size / (1024 * 1024)).toFixed(2) + ' MB\nTamaño máximo permitido: 50 MB\n\nPor favor, reduzca el tamaño del archivo o divídalo en partes más pequeñas.');
+          input.value = '';
+          return false;
+        }
+        
+        // Validar extensión
+        const fileName = file.name.toLowerCase();
+        const validExtensions = ['.xlsx', '.xls', '.csv'];
+        const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+        
+        if (!hasValidExtension) {
+          alert('⚠️ Formato de archivo no válido para eliminación.\n\nFormatos permitidos:\n• Excel 2007+ (.xlsx)\n• Excel antiguo (.xls)\n• CSV (.csv)\n\nArchivo seleccionado: ' + fileName);
+          input.value = '';
+          return false;
+        }
+        
+        // Mostrar información del archivo
+        showFileInfo(file, input);
+        return true;
+      }
+      
+      function showFileInfo(file, input) {
+        const fileName = file.name;
+        const fileSize = (file.size / (1024 * 1024)).toFixed(2);
+        const fileType = fileName.split('.').pop().toUpperCase();
+        
+        // Crear o actualizar info del archivo
+        let fileInfoDiv = document.querySelector('.file-info');
+        if (!fileInfoDiv) {
+          fileInfoDiv = document.createElement('div');
+          fileInfoDiv.className = 'file-info mt-3 p-3 rounded';
+          input.parentNode.appendChild(fileInfoDiv);
+        }
+        
+        fileInfoDiv.innerHTML = `
+          <div class="row align-items-center">
+            <div class="col-auto">
+              <i class="fas fa-trash-alt fa-2x text-danger"></i>
+            </div>
+            <div class="col">
+              <h6 class="mb-1"><i class="fas fa-exclamation-triangle text-warning"></i> Archivo para Eliminación</h6>
+              <p class="mb-1"><strong>Nombre:</strong> ${fileName}</p>
+              <p class="mb-1"><strong>Tipo:</strong> ${fileType} | <strong>Tamaño:</strong> ${fileSize} MB</p>
+              <small class="text-danger"><i class="fas fa-exclamation-triangle"></i> <strong>PRECAUCIÓN:</strong> Este archivo eliminará registros permanentemente</small>
+            </div>
+          </div>
+        `;
+      }
+      
+      function handleFormSubmit(form) {
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        // Agregar clase de carga
+        form.classList.add('uploading');
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando registros...';
+        submitBtn.disabled = true;
+        
+        // Mostrar mensaje de progreso
+        const progressDiv = document.createElement('div');
+        progressDiv.className = 'alert alert-danger mt-3';
+        progressDiv.innerHTML = `
+          <i class="fas fa-exclamation-triangle"></i> 
+          <strong>ELIMINANDO:</strong> Los registros están siendo eliminados permanentemente. Por favor no cierre esta ventana.
+        `;
+        form.appendChild(progressDiv);
+      }
+      
+      // Event listeners
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('Módulo de Eliminación de Litigantes cargado correctamente');
+        
+        // Validación del input de archivo
+        const fileInput = document.getElementById('archivoEliminar');
+        if (fileInput) {
+          fileInput.addEventListener('change', function() {
+            validateFile(this);
+          });
+        }
+        
+        // Manejo del formulario con múltiples confirmaciones
+        const form = document.querySelector('form.formularioAjax');
+        if (form) {
+          form.addEventListener('submit', function(e) {
+            const fileInput = this.querySelector('input[type="file"]');
+            if (!fileInput.files[0]) {
+              e.preventDefault();
+              alert('⚠️ Por favor seleccione un archivo antes de continuar.');
+              return false;
+            }
+            
+            // Primera confirmación
+            if (!confirm('⚠️ PRIMERA CONFIRMACIÓN\n\n¿Está seguro de que desea ELIMINAR registros de litigantes?\n\nArchivo: ' + fileInput.files[0].name + '\n\nEsta acción es IRREVERSIBLE.')) {
+              e.preventDefault();
+              return false;
+            }
+            
+            // Segunda confirmación
+            if (!confirm('⚠️ SEGUNDA CONFIRMACIÓN\n\nEsto ELIMINARÁ PERMANENTEMENTE los registros.\n\n¿Ha hecho un respaldo de los datos?\n\n¿Realmente desea continuar?')) {
+              e.preventDefault();
+              return false;
+            }
+            
+            // Tercera confirmación final
+            if (!confirm('⚠️ CONFIRMACIÓN FINAL\n\nÚltima oportunidad para cancelar.\n\nLos datos se ELIMINARÁN PERMANENTEMENTE.\n\n¿Proceder con la eliminación?')) {
+              e.preventDefault();
+              return false;
+            }
+            
+            handleFormSubmit(this);
+          });
+        }
+        
+        // Mostrar advertencia al cargar la página
+        setTimeout(function() {
+          if (!sessionStorage.getItem('eliminacionWarningShown')) {
+            alert('⚠️ ADVERTENCIA IMPORTANTE\n\nEstá accediendo al módulo de ELIMINACIÓN de litigantes.\n\nEste módulo elimina datos PERMANENTEMENTE.\n\nAsegúrese de tener respaldos antes de proceder.\n\nUse con EXTREMA PRECAUCIÓN.');
+            sessionStorage.setItem('eliminacionWarningShown', 'true');
+          }
+        }, 1000);
+        
+        // Inicializar tooltips
+        if (typeof bootstrap !== 'undefined') {
+          const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+          const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+          });
+        }
+      });
+    </script>
+  </body>
+</html>

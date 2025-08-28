@@ -33,11 +33,11 @@
             $i = 2;
             while ($a = $objPHPExcel->getActiveSheet()->getCell('A' . $i)->getCalculatedValue()) {
               if ($a =! "") {
-                  $_DATOS_EXCEL[$i]['rit'] =trim($objPHPExcel->getActiveSheet()->getCell('B' . $i)->getCalculatedValue());
-                  $_DATOS_EXCEL[$i]['ruc'] =trim($objPHPExcel->getActiveSheet()->getCell('C' . $i)->getCalculatedValue());
-                  $_DATOS_EXCEL[$i]['fechaIngreso'] = trim($objPHPExcel->getActiveSheet()->getCell('D' . $i)->getCalculatedValue());
-                  $_DATOS_EXCEL[$i]['participantes'] = trim($objPHPExcel->getActiveSheet()->getCell('E' . $i)->getCalculatedValue()) ;
-                  $_DATOS_EXCEL[$i]['materia'] = trim($objPHPExcel->getActiveSheet()->getCell('F' . $i)->getCalculatedValue());                  
+                  $_DATOS_EXCEL[$i]['rit'] =trim($objPHPExcel->getActiveSheet()->getCell('A' . $i)->getCalculatedValue());
+                  $_DATOS_EXCEL[$i]['ruc'] =trim($objPHPExcel->getActiveSheet()->getCell('B' . $i)->getCalculatedValue());
+                  $_DATOS_EXCEL[$i]['fechaIngreso'] = trim($objPHPExcel->getActiveSheet()->getCell('C' . $i)->getCalculatedValue());
+                  $_DATOS_EXCEL[$i]['participantes'] = trim($objPHPExcel->getActiveSheet()->getCell('D' . $i)->getCalculatedValue()) ;
+                  $_DATOS_EXCEL[$i]['materia'] = trim($objPHPExcel->getActiveSheet()->getCell('E' . $i)->getCalculatedValue());                  
                 $i++;
               } else {
                 break;
