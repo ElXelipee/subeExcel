@@ -535,6 +535,15 @@ Para soporte judicial, contacte al secretario del juzgado.
           case 'archivo_no_cargado':
             message = 'Error al cargar el archivo en el servidor. Verifique el formato del archivo.';
             break;
+          case 'error_copia_archivo':
+            message = 'Error al copiar el archivo al servidor. Verifique los permisos de escritura.';
+            break;
+          case 'archivo_sin_datos':
+            message = 'El archivo no contiene datos válidos para procesar. Verifique que el archivo tenga el formato correcto.';
+            break;
+          case 'error_procesamiento':
+            message = 'Error durante el procesamiento del archivo. Verifique que el formato del Excel sea compatible.';
+            break;
           default:
             message = 'Ocurrió un error inesperado durante la carga.';
         }
