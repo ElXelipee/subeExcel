@@ -217,3 +217,45 @@
     }
     echo "Correctos: " . $correcto . " Errores: " . $error;
   }
+
+  function cargaLibroAudienciaSitfa($matriz){
+  global $conexion;
+  $error = 0;
+  $correcto =  0;
+  // antes de insertar elimina todo el contenido de la tabla tbl_libroaudienciassitfa
+  $sql = "DELETE FROM tbl_libroaudienciassitfa";
+  $stmt = $conexion->prepare($sql);
+  $stmt->execute();
+  foreach ($matriz as $key) {
+    $sql = "INSERT INTO tbl_libroaudienciassitfa (
+      fechaFirma, fechaAudiencia, sala, horaInicio, horaTermino, rit, caj, estadoCausa, ruc, caratulado, tipoAudiencia, juez, materia, tipoNotificacion, estadoNotificacion, enteNotificador, consolidada, videoconferencia
+    ) VALUES (
+      :fechaFirma, :fechaAudiencia, :sala, :horaInicio, :horaTermino, :rit, :caj, :estadoCausa, :ruc, :caratulado, :tipoAudiencia, :juez, :materia, :tipoNotificacion, :estadoNotificacion, :enteNotificador, :consolidada, :videoconferencia
+    )";
+    $stmt = $conexion->prepare($sql);
+    $stmt->bindParam(':fechaFirma', $key['fechaFirma']);
+    $stmt->bindParam(':fechaAudiencia', $key['fechaAudiencia']);
+    $stmt->bindParam(':sala', $key['sala']);
+    $stmt->bindParam(':horaInicio', $key['horaInicio']);
+    $stmt->bindParam(':horaTermino', $key['horaTermino']);
+    $stmt->bindParam(':rit', $key['rit']);
+    $stmt->bindParam(':caj', $key['caj']);
+    $stmt->bindParam(':estadoCausa', $key['estadoCausa']);
+    $stmt->bindParam(':ruc', $key['ruc']);
+    $stmt->bindParam(':caratulado', $key['caratulado']);
+    $stmt->bindParam(':tipoAudiencia', $key['tipoAudiencia']);
+    $stmt->bindParam(':juez', $key['juez']);
+    $stmt->bindParam(':materia', $key['materia']);
+    $stmt->bindParam(':tipoNotificacion', $key['tipoNotificacion']);
+    $stmt->bindParam(':estadoNotificacion', $key['estadoNotificacion']);
+    $stmt->bindParam(':enteNotificador', $key['enteNotificador']);
+    $stmt->bindParam(':consolidada', $key['consolidada']);
+    $stmt->bindParam(':videoconferencia', $key['videoconferencia']);
+    if (!$stmt->execute()) {
+      $error++;
+    } else {
+      $correcto++;
+    }
+  }
+  return array('correctos' => $correcto, 'errores' => $error);
+}

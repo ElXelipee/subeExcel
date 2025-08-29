@@ -460,9 +460,121 @@ Para soporte judicial, contacte al secretario del juzgado.
         form.appendChild(progressDiv);
       }
       
+      // Función para mostrar los resultados de la carga
+      function showResultModal(correctos, errores) {
+        const total = correctos + errores;
+        const successRate = total > 0 ? Math.round((correctos / total) * 100) : 0;
+        
+        // Crear el modal dinámicamente
+        const modalHTML = `
+          <div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <div class="modal-header bg-${correctos > errores ? 'success' : 'warning'} text-white">
+                  <h5 class="modal-title" id="resultModalLabel">
+                    <i class="fas fa-chart-bar"></i> Resultado de la Carga
+                  </h5>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <div class="text-center mb-4">
+                    <div class="row">
+                      <div class="col-6">
+                        <div class="card border-success">
+                          <div class="card-body">
+                            <h3 class="text-success mb-1">${correctos}</h3>
+                            <small class="text-muted">Registros Correctos</small>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-6">
+                        <div class="card border-danger">
+                          <div class="card-body">
+                            <h3 class="text-danger mb-1">${errores}</h3>
+                            <small class="text-muted">Registros con Error</small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="alert alert-info">
+                    <strong>Total procesado:</strong> ${total} registros<br>
+                    <strong>Tasa de éxito:</strong> ${successRate}%
+                  </div>
+                  ${errores > 0 ? '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> Algunos registros no pudieron ser procesados. Verifique el formato del archivo Excel.</div>' : ''}
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                  <button type="button" class="btn btn-primary" onclick="location.reload()">Cargar Otro Archivo</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        // Agregar el modal al DOM
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Mostrar el modal
+        const modal = new bootstrap.Modal(document.getElementById('resultModal'));
+        modal.show();
+        
+        // Limpiar la URL después de mostrar el resultado
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+      
+      // Función para mostrar mensajes de error
+      function showErrorMessage(errorType) {
+        let message = '';
+        let title = 'Error en la Carga';
+        
+        switch(errorType) {
+          case 'archivo_no_recibido':
+            message = 'No se recibió el archivo. Por favor, seleccione un archivo e intente nuevamente.';
+            break;
+          case 'archivo_no_cargado':
+            message = 'Error al cargar el archivo en el servidor. Verifique el formato del archivo.';
+            break;
+          default:
+            message = 'Ocurrió un error inesperado durante la carga.';
+        }
+        
+        const alertHTML = `
+          <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+            <i class="fas fa-exclamation-circle"></i>
+            <strong>${title}:</strong> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        `;
+        
+        // Agregar el alert después del formulario
+        const form = document.querySelector('form.formularioAjax');
+        if (form) {
+          form.insertAdjacentHTML('afterend', alertHTML);
+        }
+        
+        // Limpiar la URL después de mostrar el error
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+      
       // Event listeners
       document.addEventListener('DOMContentLoaded', function() {
         console.log('Módulo de Carga de Libro de Audiencias cargado correctamente');
+        
+        // Verificar si hay parámetros de resultado en la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const correctos = urlParams.get('correctos');
+        const errores = urlParams.get('errores');
+        const carga = urlParams.get('carga');
+        const error = urlParams.get('error');
+        
+        if (carga === 'completada' && (correctos !== null || errores !== null)) {
+          // Mostrar modal o alert con los resultados
+          showResultModal(parseInt(correctos) || 0, parseInt(errores) || 0);
+        } else if (error) {
+          // Mostrar error
+          showErrorMessage(error);
+        }
         
         // Validación del input de archivo
         const fileInput = document.getElementById('archivoLibroAudiencias');

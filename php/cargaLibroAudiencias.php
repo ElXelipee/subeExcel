@@ -2,7 +2,6 @@
   // require("../config/database/conexion.php");
   require_once('funcionesBD.php');
   require_once ('../lib/function.php');
-  var_dump($_REQUEST);
 
 
           if (isset($_FILES['archivoExcel'])) {
@@ -76,57 +75,25 @@
               }
             }
            
-           // Mostrar los datos procesados para verificación
-           echo "<h3>Datos procesados del Excel:</h3>";
-           echo "<pre>";
-           var_dump($_DATOS_EXCEL);
-           echo "</pre>";
-           
-           echo "<h3>Resumen de registros procesados:</h3>";
-           echo "Total de filas procesadas: " . count($_DATOS_EXCEL) . "<br>";
-           
            // Mostrar algunos ejemplos de conversión
            if (!empty($_DATOS_EXCEL)) {
-               echo "<h4>Ejemplos de conversión:</h4>";
-               $contador = 0;
-               foreach ($_DATOS_EXCEL as $indice => $fila) {
-                   if ($contador < 3) { // Mostrar solo los primeros 3 ejemplos
-                       echo "<strong>Fila $indice:</strong><br>";
-                       echo "- Fecha A: " . ($fila['fechaA'] ?? 'NULL') . "<br>";
-                       echo "- Fecha B: " . ($fila['fechaB'] ?? 'NULL') . "<br>";
-                       echo "- Texto C: " . ($fila['textoC'] ?? 'NULL') . "<br>";
-                       echo "- Hora D: " . ($fila['horaD'] ?? 'NULL') . "<br>";
-                       echo "- Texto E: " . ($fila['textoE'] ?? 'NULL') . "<br>";
-                       echo "- Hora F: " . ($fila['horaF'] ?? 'NULL') . "<br><br>";
-                       $contador++;
-                   }
-               }
+            $resultado = cargaLibroAudienciaSitfa($_DATOS_EXCEL);
+            $correctos = $resultado['correctos'];
+            $errores = $resultado['errores'];
+            
+            // Redirigir a la página con los parámetros de resultado
+            header("Location: ../pages/libro-audiencias.html?correctos=" . $correctos . "&errores=" . $errores . "&carga=completada");
+            exit();
            }
            
-            //con el array completado, lo subo a la base de dato, por lo que necesitaré la nueva conexión.
-//   Este se encarga de insertar         if(insertaAudiencias($_DATOS_EXCEL)){
-                    // $alerta = [
-                    //   'Alerta' => 'simple',
-                    //   'Titulo' => 'CARGA CORRECTA ✔️',
-                    //   'Texto' => 'Las audiencias fueroncargadas de manera correcta.',
-                    //   'Tipo' => 'success',
-                    //   'Timer' => '1500',
-                    //   'Tabla' => 'no'
-                    // ];
-                    // echo json_encode($alerta);
-                    // exit();
-//            }else {
-//              echo 'error';
-//            }
+
           }
           //si por algo no cargo el archivo bak_ 
           else {
-            //echo "Necesitas primero importar el archivo";
+            header("Location: ../pages/libro-audiencias.html?error=archivo_no_cargado");
+            exit();
           }
-          $i = 0;
         } else {
-          //header("Location:index.html");
-          echo 'noo llegó el archiv';
-        }
-
+          header("Location: ../pages/libro-audiencias.html?error=archivo_no_recibido");
           exit();
+        }
