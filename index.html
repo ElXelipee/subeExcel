@@ -100,6 +100,31 @@
         border-color: #5a2d91;
         color: white;
       }
+      
+      /* Colores personalizados para TV (broadcasting orange) */
+      .bg-tv {
+        background-color: #ff6b35 !important;
+      }
+      
+      .border-tv {
+        border-color: #ff6b35 !important;
+      }
+      
+      .text-tv {
+        color: #ff6b35 !important;
+      }
+      
+      .btn-tv {
+        background-color: #ff6b35;
+        border-color: #ff6b35;
+        color: white;
+      }
+      
+      .btn-tv:hover {
+        background-color: #e55a2b;
+        border-color: #e55a2b;
+        color: white;
+      }
     </style>
   </head>
   <body>
@@ -145,6 +170,12 @@
                 </a></li>
                 <li><a class="dropdown-item" href="pages/maiva-sml.html">
                   <i class="fas fa-database"></i> Cargar Maiva SML
+                </a></li>
+                <li><a class="dropdown-item" href="pages/cargaFuncionariosAsistencia.html">
+                  <i class="fas fa-user-clock"></i> Carga Funcionarios Asistencia
+                </a></li>
+                <li><a class="dropdown-item" href="pages/cargaAudienciasTV.html">
+                  <i class="fas fa-tv"></i> Carga Audiencias TV
                 </a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item text-danger" href="pages/eliminar-litigantes.html">
@@ -374,7 +405,26 @@
           </a>
         </div>
 
-
+        <!-- Tarjeta para Carga Audiencias TV -->
+        <div class="col-lg-6 col-md-12">
+          <a href="pages/cargaAudienciasTV.html" class="text-decoration-none">
+            <div class="card h-100 shadow-sm border-tv">
+              <div class="card-header bg-tv text-white">
+                <h5 class="card-title mb-0">
+                  <i class="fas fa-tv"></i> Carga Audiencias TV
+                </h5>
+              </div>
+              <div class="card-body">
+                <p class="card-text">Carga programación de audiencias para transmisión televisiva.</p>
+                <div class="d-grid">
+                  <div class="btn btn-tv">
+                    <i class="fas fa-broadcast-tower"></i> Acceder al Módulo
+                  </div>
+                </div>
+              </div>
+            </div>
+          </a>
+        </div>
 
       </div>
     </div>
