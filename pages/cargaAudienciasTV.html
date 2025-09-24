@@ -246,7 +246,7 @@
               </h5>
             </div>
             <div class="card-body p-4">
-              <form action="../php/cargaAudienciasTV.php" method="POST" class="formularioAjax" data-form="save" autocomplete="off" enctype="multipart/form-data">
+              <form id="formAudienciasTV" action="../php/cargaAudienciasTV.php" method="POST" autocomplete="off" enctype="multipart/form-data">
                 <div class="row">
                   <div class="col-12">
                     <div class="form-group mb-4">
@@ -269,6 +269,54 @@
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+
+          <!-- Modal de Resultados -->
+          <div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+              <div class="modal-content">
+                <div class="modal-header" id="modalHeader">
+                  <h5 class="modal-title" id="resultModalLabel">
+                    <i class="fas fa-tv"></i> Resultado de la Carga
+                  </h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <div class="row">
+                    <div class="col-md-6 text-center">
+                      <div class="card border-success">
+                        <div class="card-body">
+                          <h2 id="registrosCorrectos" class="text-success">0</h2>
+                          <p class="mb-0">Registros Correctos</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-6 text-center">
+                      <div class="card border-danger">
+                        <div class="card-body">
+                          <h2 id="registrosError" class="text-danger">0</h2>
+                          <p class="mb-0">Registros con Error</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="alert mt-4" id="resumenAlert">
+                    <p><strong>Total procesado:</strong> <span id="totalProcesado">0</span> registros</p>
+                    <p><strong>Tasa de éxito:</strong> <span id="tasaExito">0</span>%</p>
+                  </div>
+                  
+                  <div id="erroresContainer" style="display: none;">
+                    <h6>Errores encontrados:</h6>
+                    <ul id="listaErrores"></ul>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                  <button type="button" class="btn btn-tv" onclick="location.reload()">Cargar Otro Archivo</button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -488,23 +536,109 @@ Para soporte técnico, contacte al área de sistemas.
         `;
       }
       
-      function handleFormSubmit(form) {
+      function submitFormWithAjax(form) {
         const submitBtn = form.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
         
-        // Agregar clase de carga
-        form.classList.add('uploading');
+        // Deshabilitar botón y mostrar progreso
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando Audiencias TV...';
         submitBtn.disabled = true;
         
-        // Mostrar mensaje de progreso
-        const progressDiv = document.createElement('div');
-        progressDiv.className = 'alert alert-tv mt-3';
-        progressDiv.innerHTML = `
-          <i class="fas fa-broadcast-tower"></i> 
-          <strong>Procesando:</strong> La programación de Audiencias TV está siendo procesada. Por favor no cierre esta ventana.
-        `;
-        form.appendChild(progressDiv);
+        // Crear FormData con los datos del formulario
+        const formData = new FormData(form);
+        
+        // Realizar petición AJAX
+        fetch(form.action, {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Mostrar modal con resultados
+          showResultModal(data);
+          
+          // Restaurar botón
+          submitBtn.innerHTML = originalText;
+          submitBtn.disabled = false;
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          
+          let errorMessage = 'Error de conexión con el servidor';
+          
+          if (error.message.includes('HTTP: 500')) {
+            errorMessage = 'Error interno del servidor. Verifique la configuración de la base de datos.';
+          } else if (error.message.includes('HTTP: 404')) {
+            errorMessage = 'No se encontró el archivo de procesamiento.';
+          } else if (error.message.includes('HTTP: 413')) {
+            errorMessage = 'El archivo es demasiado grande para procesar.';
+          } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+            errorMessage = 'Error de red. Verifique su conexión a internet.';
+          }
+          
+          // Mostrar modal de error
+          showResultModal({
+            status: 'error',
+            message: errorMessage,
+            registros_correctos: 0,
+            registros_error: 1,
+            total_procesado: 0,
+            tasa_exito: 0,
+            errores: [errorMessage]
+          });
+          
+          // Restaurar botón
+          submitBtn.innerHTML = originalText;
+          submitBtn.disabled = false;
+        });
+      }
+      
+      function showResultModal(data) {
+        // Actualizar contenido del modal
+        document.getElementById('registrosCorrectos').textContent = data.registros_correctos;
+        document.getElementById('registrosError').textContent = data.registros_error;
+        document.getElementById('totalProcesado').textContent = data.total_procesado;
+        document.getElementById('tasaExito').textContent = data.tasa_exito;
+        
+        // Configurar header del modal según el status
+        const modalHeader = document.getElementById('modalHeader');
+        const resumenAlert = document.getElementById('resumenAlert');
+        
+        if (data.status === 'success') {
+          modalHeader.className = 'modal-header bg-success text-white';
+          resumenAlert.className = 'alert alert-success mt-4';
+        } else if (data.status === 'warning') {
+          modalHeader.className = 'modal-header bg-warning text-dark';
+          resumenAlert.className = 'alert alert-warning mt-4';
+        } else {
+          modalHeader.className = 'modal-header bg-danger text-white';
+          resumenAlert.className = 'alert alert-danger mt-4';
+        }
+        
+        // Mostrar errores si los hay
+        const erroresContainer = document.getElementById('erroresContainer');
+        const listaErrores = document.getElementById('listaErrores');
+        
+        if (data.errores && data.errores.length > 0) {
+          listaErrores.innerHTML = '';
+          data.errores.forEach(error => {
+            const li = document.createElement('li');
+            li.textContent = error;
+            listaErrores.appendChild(li);
+          });
+          erroresContainer.style.display = 'block';
+        } else {
+          erroresContainer.style.display = 'none';
+        }
+        
+        // Mostrar el modal
+        const modal = new bootstrap.Modal(document.getElementById('resultModal'));
+        modal.show();
       }
       
       // Event listeners
@@ -519,23 +653,23 @@ Para soporte técnico, contacte al área de sistemas.
           });
         }
         
-        // Manejo del formulario
-        const form = document.querySelector('form.formularioAjax');
+        // Manejo del formulario con AJAX
+        const form = document.getElementById('formAudienciasTV');
         if (form) {
           form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
             const fileInput = this.querySelector('input[type="file"]');
             if (!fileInput.files[0]) {
-              e.preventDefault();
               alert('⚠️ Por favor seleccione un archivo de Audiencias TV antes de continuar.');
               return false;
             }
             
             if (!confirm('¿Está seguro de que desea cargar esta programación de Audiencias TV?\n\nArchivo: ' + fileInput.files[0].name + '\nTamaño: ' + (fileInput.files[0].size / (1024 * 1024)).toFixed(2) + ' MB\n\n📺 Los datos se procesarán para programación televisiva.')) {
-              e.preventDefault();
               return false;
             }
             
-            handleFormSubmit(this);
+            submitFormWithAjax(this);
           });
         }
         

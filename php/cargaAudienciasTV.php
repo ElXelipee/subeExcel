@@ -2,50 +2,111 @@
 
 /**
  * Archivo para cargar datos de Audiencias TV desde Excel
- * Versión: 1.0
+ * Versión: 3.0 - Retorna JSON para modal
  * Fecha: 24 Septiembre 2025
  */
 
-// Incluir archivos necesarios
 require_once '../config/config.php';
 require_once '../config/database/conexion.php';
 require_once '../lib/PHPExcel/PHPExcel.php';
 require_once '../lib/function.php';
 
-// Verificar que se recibió el archivo
+// Configurar cabeceras para JSON
+header('Content-Type: application/json; charset=utf-8');
+
+function conectarBD()
+{
+    $servidor   = "localhost";
+    $usuario    = "root";
+    $password   = "";
+    $base_datos = "pj_audiencias_sys";
+
+    $conexion = new mysqli($servidor, $usuario, $password, $base_datos);
+    if ($conexion->connect_error) {
+        throw new Exception("Error de conexión: " . $conexion->connect_error);
+    }
+    $conexion->set_charset("utf8");
+    return $conexion;
+}
+
+// ======================
+// Verificar archivo
+// ======================
 if (!isset($_FILES['archivoExcel']) || $_FILES['archivoExcel']['error'] !== UPLOAD_ERR_OK) {
-    die(json_encode([
+    $error_message = 'No se recibió el archivo';
+
+    if (isset($_FILES['archivoExcel']['error'])) {
+        switch ($_FILES['archivoExcel']['error']) {
+            case UPLOAD_ERR_INI_SIZE:
+            case UPLOAD_ERR_FORM_SIZE:
+                $error_message = 'El archivo es demasiado grande. Tamaño máximo permitido: 50MB';
+                break;
+            case UPLOAD_ERR_PARTIAL:
+                $error_message = 'El archivo se subió parcialmente. Intente nuevamente';
+                break;
+            case UPLOAD_ERR_NO_FILE:
+                $error_message = 'No se seleccionó ningún archivo';
+                break;
+            case UPLOAD_ERR_NO_TMP_DIR:
+                $error_message = 'Error del servidor: falta carpeta temporal';
+                break;
+            case UPLOAD_ERR_CANT_WRITE:
+                $error_message = 'Error del servidor: no se puede escribir el archivo';
+                break;
+            default:
+                $error_message = 'Error desconocido al subir el archivo';
+                break;
+        }
+    }
+
+    echo json_encode([
         'status' => 'error',
-        'message' => '❌ Error: No se recibió el archivo o hubo un problema en la carga.'
-    ]));
+        'message' => $error_message,
+        'registros_correctos' => 0,
+        'registros_error' => 1,
+        'total_procesado' => 0,
+        'tasa_exito' => 0,
+        'errores' => [$error_message]
+    ]);
+    exit;
 }
 
 try {
-    // Información del archivo
-    $archivoTemporal = $_FILES['archivoExcel']['tmp_name'];
-    $nombreArchivo = $_FILES['archivoExcel']['name'];
-    $extensionArchivo = pathinfo($nombreArchivo, PATHINFO_EXTENSION);
+    $archivoTemporal   = $_FILES['archivoExcel']['tmp_name'];
+    $nombreArchivo     = $_FILES['archivoExcel']['name'];
+    $extensionArchivo  = pathinfo($nombreArchivo, PATHINFO_EXTENSION);
 
-    echo "<h2>📺 Procesando Audiencias TV</h2>";
-    echo "<p><strong>Archivo:</strong> $nombreArchivo</p>";
-    echo "<p><strong>Extensión:</strong> $extensionArchivo</p>";
-    echo "<hr>";
+    // Debug: Log información del archivo
+    error_log("DEBUG - Archivo recibido: $nombreArchivo, Extensión: $extensionArchivo, Tamaño: " . $_FILES['archivoExcel']['size']);
 
     // Validar extensión
     $extensionesPermitidas = ['xlsx', 'xls', 'csv'];
     if (!in_array(strtolower($extensionArchivo), $extensionesPermitidas)) {
-        throw new Exception("❌ Extensión de archivo no permitida: $extensionArchivo");
+        echo json_encode([
+            'status' => 'error',
+            'message' => "Extensión no permitida: $extensionArchivo",
+            'registros_correctos' => 0,
+            'registros_error' => 0,
+            'total_procesado' => 0,
+            'tasa_exito' => 0,
+            'errores' => ["Extensión $extensionArchivo no está permitida"]
+        ]);
+        exit;
     }
 
-    // Cargar el archivo Excel
-    echo "<h3>🔄 Cargando archivo...</h3>";
-
+    // Cargar Excel
     if (strtolower($extensionArchivo) === 'csv') {
         $objReader = PHPExcel_IOFactory::createReader('CSV');
-        $objReader->setDelimiter(',');
-        $objReader->setEnclosure('"');
-        $objReader->setLineEnding("\r\n");
-        $objReader->setSheetIndex(0);
+        // Configurar opciones de CSV si están disponibles
+        if (method_exists($objReader, 'setDelimiter')) {
+            $objReader->setDelimiter(',');
+        }
+        if (method_exists($objReader, 'setEnclosure')) {
+            $objReader->setEnclosure('"');
+        }
+        if (method_exists($objReader, 'setLineEnding')) {
+            $objReader->setLineEnding("\r\n");
+        }
     } else {
         $objReader = PHPExcel_IOFactory::createReader('Excel2007');
         if (strtolower($extensionArchivo) === 'xls') {
@@ -53,248 +114,300 @@ try {
         }
     }
 
-    $objPHPExcel = $objReader->load($archivoTemporal);
+    // Debug: Log antes de cargar Excel
+    error_log("DEBUG - Intentando cargar archivo con " . get_class($objReader));
+
+    $objPHPExcel  = $objReader->load($archivoTemporal);
     $objWorksheet = $objPHPExcel->getActiveSheet();
 
-    // Obtener el rango de datos
-    $highestRow = $objWorksheet->getHighestRow();
-    $highestColumn = $objWorksheet->getHighestColumn();
+    // Debug: Log después de cargar
+    error_log("DEBUG - Archivo cargado exitosamente");
+
+    $highestRow         = $objWorksheet->getHighestRow();
+    $highestColumn      = $objWorksheet->getHighestColumn();
     $highestColumnIndex = PHPExcel_Cell::columnIndexFromString($highestColumn);
 
-    echo "<p>✅ Archivo cargado exitosamente</p>";
-    echo "<p><strong>Filas encontradas:</strong> $highestRow</p>";
-    echo "<p><strong>Columnas encontradas:</strong> $highestColumn ($highestColumnIndex columnas)</p>";
-    echo "<hr>";
-
-    // Verificar que tenga al menos 12 columnas (A-L)
-    if ($highestColumnIndex < 12) {
-        throw new Exception("❌ El archivo debe tener al menos 12 columnas (A-L). Encontradas: $highestColumnIndex");
-    }
-
-    // Verificar que tenga al menos 2 filas (encabezado + datos)
+    // Validar que el archivo tenga contenido
     if ($highestRow < 2) {
-        throw new Exception("❌ El archivo debe tener al menos 2 filas (encabezado + datos). Encontradas: $highestRow");
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'El archivo está vacío o solo tiene encabezados',
+            'registros_correctos' => 0,
+            'registros_error' => 1,
+            'total_procesado' => 0,
+            'tasa_exito' => 0,
+            'errores' => ['El archivo debe tener al menos una fila de datos además del encabezado']
+        ]);
+        exit;
     }
 
-    // Leer encabezados (fila 1)
-    echo "<h3>📋 Encabezados encontrados:</h3>";
-    $encabezados = [];
-    for ($col = 0; $col < 12; $col++) {
-        $columnLetter = PHPExcel_Cell::stringFromColumnIndex($col);
-        $cellValue = $objWorksheet->getCell($columnLetter . '1')->getCalculatedValue();
-        $encabezados[$col] = trim($cellValue);
-        echo "<p><strong>Columna $columnLetter:</strong> " . htmlspecialchars($encabezados[$col]) . "</p>";
+    // Validar que tenga al menos 12 columnas
+    if ($highestColumnIndex < 12) {
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'El archivo no tiene las columnas requeridas',
+            'registros_correctos' => 0,
+            'registros_error' => 1,
+            'total_procesado' => 0,
+            'tasa_exito' => 0,
+            'errores' => ["El archivo debe tener al menos 12 columnas (A-L). Encontradas: $highestColumnIndex"]
+        ]);
+        exit;
     }
-    echo "<hr>";
 
-    // Preparar matriz para almacenar los datos
-    echo "<h3>🔍 Procesando datos...</h3>";
+    // ======================
+    // Procesar filas Excel
+    // ======================
     $datosAudienciasTV = [];
 
-    // Procesar cada fila de datos (desde la fila 2)
     for ($row = 2; $row <= $highestRow; $row++) {
+        $fila      = [];
         $filaVacia = true;
-        $fila = [];
 
-        // Leer las 12 columnas (A-L)
         for ($col = 0; $col < 12; $col++) {
             $columnLetter = PHPExcel_Cell::stringFromColumnIndex($col);
-            $cell = $objWorksheet->getCell($columnLetter . $row);
+            $cell         = $objWorksheet->getCell($columnLetter . $row);
 
-            // Manejar diferentes tipos de datos según la columna
             switch ($col) {
-                case 0: // Columna A: F. Audiencia (fecha)
+                case 0: // fecha
                     if (PHPExcel_Shared_Date::isDateTime($cell)) {
                         $dateValue = PHPExcel_Shared_Date::ExcelToPHP($cell->getCalculatedValue());
-                        $fila[$col] = date('Y-m-d', $dateValue);
+                        $fila[$col] = date('Y-m-d', (int)$dateValue);
                     } else {
                         $fila[$col] = trim($cell->getCalculatedValue());
                     }
                     break;
-
-                case 1: // Columna B: Sala (general)
-                    $fila[$col] = trim($cell->getCalculatedValue());
-                    break;
-
-                case 2: // Columna C: H. Inicio (hora personalizada)
+                case 2: // hora
                     if (PHPExcel_Shared_Date::isDateTime($cell)) {
                         $timeValue = PHPExcel_Shared_Date::ExcelToPHP($cell->getCalculatedValue());
-                        $fila[$col] = date('H:i', $timeValue);
+                        $fila[$col] = date('H:i', (int)$timeValue);
                     } else {
                         $fila[$col] = trim($cell->getCalculatedValue());
                     }
                     break;
-
-                default: // Columnas D-L: Todas generales
+                default:
                     $fila[$col] = trim($cell->getCalculatedValue());
                     break;
             }
 
-            // Verificar si la fila no está vacía
             if (!empty($fila[$col])) {
                 $filaVacia = false;
             }
         }
 
-        // Solo agregar la fila si no está completamente vacía
         if (!$filaVacia) {
             $datosAudienciasTV[] = [
-                'fila' => $row,
-                'f_audiencia' => $fila[0],    // F. Audiencia
-                'sala' => $fila[1],           // Sala
-                'h_inicio' => $fila[2],       // H. Inicio
-                'rit' => $fila[3],            // RIT
-                'caj' => $fila[4],            // CAJ
-                'caratulado' => $fila[5],     // Caratulado
-                'tipo_audiencia' => $fila[6], // Tipo Audiencia
-                'materia' => $fila[7],        // Materia
-                'juez' => $fila[8],           // Juez
-                'acta' => $fila[9],           // Acta
-                'ct' => $fila[10],            // CT
-                'cuenta_zoom' => $fila[11]    // Cuenta Zoom
+                'fila'          => $row,
+                'f_audiencia'   => $fila[0],
+                'sala'          => $fila[1],
+                'h_inicio'      => $fila[2],
+                'rit'           => $fila[3],
+                'caj'           => $fila[4],
+                'caratulado'    => $fila[5],
+                'tipo_audiencia' => $fila[6],
+                'materia'       => $fila[7],
+                'juez'          => $fila[8],
+                'acta'          => $fila[9],
+                'ct'            => $fila[10],
+                'cuenta_zoom'   => $fila[11]
             ];
         }
     }
 
-    echo "<p>✅ Datos procesados: " . count($datosAudienciasTV) . " registros</p>";
-    echo "<hr>";
+    // Verificar que se procesaron datos
+    if (empty($datosAudienciasTV)) {
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'No se encontraron datos válidos para procesar',
+            'registros_correctos' => 0,
+            'registros_error' => 1,
+            'total_procesado' => 0,
+            'tasa_exito' => 0,
+            'errores' => ['El archivo no contiene datos válidos o todas las filas están vacías']
+        ]);
+        exit;
+    }
 
-    // Mostrar los datos preparados con var_dump
-    echo "<h3>🔍 Datos preparados para subir (var_dump):</h3>";
-    echo "<div style='background-color: #f8f9fa; padding: 15px; border: 1px solid #dee2e6; border-radius: 5px; font-family: monospace; white-space: pre-wrap; max-height: 400px; overflow-y: auto;'>";
+    // ======================
+    // Inserción a BD
+    // ======================
 
-    // Usar buffer de salida para capturar el var_dump
-    ob_start();
-    var_dump($datosAudienciasTV);
-    $vardump_output = ob_get_clean();
+    $tablaHorarios = [
+        '08:30' => ['termino' => '09:00', 'bloque_inicio' => 3, 'bloque_termino' => 5, 'cantidad_bloques' => 3],
+        '09:15' => ['termino' => '09:45', 'bloque_inicio' => 6, 'bloque_termino' => 8, 'cantidad_bloques' => 3],
+        '10:00' => ['termino' => '10:30', 'bloque_inicio' => 9, 'bloque_termino' => 11, 'cantidad_bloques' => 3],
+        '11:00' => ['termino' => '11:30', 'bloque_inicio' => 13, 'bloque_termino' => 15, 'cantidad_bloques' => 3],
+        '11:45' => ['termino' => '12:15', 'bloque_inicio' => 16, 'bloque_termino' => 18, 'cantidad_bloques' => 3],
+        '12:30' => ['termino' => '13:00', 'bloque_inicio' => 19, 'bloque_termino' => 21, 'cantidad_bloques' => 3]
+    ];
 
-    echo htmlspecialchars($vardump_output);
-    echo "</div>";
+    // Debug: Log antes de conectar BD
+    error_log("DEBUG - Intentando conectar a base de datos");
 
-    echo "<hr>";
-    echo "<h3>📊 Resumen del procesamiento:</h3>";
-    echo "<div class='alert alert-success'>";
-    echo "<p><strong>✅ Archivo procesado exitosamente</strong></p>";
-    echo "<p><strong>📁 Archivo:</strong> $nombreArchivo</p>";
-    echo "<p><strong>📊 Total de registros:</strong> " . count($datosAudienciasTV) . "</p>";
-    echo "<p><strong>📅 Fecha de procesamiento:</strong> " . date('d/m/Y H:i:s') . "</p>";
-    echo "</div>";
+    $conexion = conectarBD();
 
-    // Mostrar algunos ejemplos de datos
-    if (count($datosAudienciasTV) > 0) {
-        echo "<h3>📋 Primeros 3 registros procesados:</h3>";
-        echo "<div class='table-responsive'>";
-        echo "<table class='table table-striped table-sm'>";
-        echo "<thead><tr>";
-        echo "<th>Fila</th><th>F. Audiencia</th><th>Sala</th><th>H. Inicio</th><th>RIT</th><th>CAJ</th><th>Caratulado</th>";
-        echo "<th>Tipo Audiencia</th><th>Materia</th><th>Juez</th><th>Acta</th><th>CT</th><th>Cuenta Zoom</th>";
-        echo "</tr></thead><tbody>";
+    // Debug: Log después de conectar
+    error_log("DEBUG - Conexión a BD exitosa");
 
-        $maxRegistros = min(3, count($datosAudienciasTV));
-        for ($i = 0; $i < $maxRegistros; $i++) {
-            $registro = $datosAudienciasTV[$i];
-            echo "<tr>";
-            echo "<td>" . htmlspecialchars($registro['fila']) . "</td>";
-            echo "<td>" . htmlspecialchars($registro['f_audiencia']) . "</td>";
-            echo "<td>" . htmlspecialchars($registro['sala']) . "</td>";
-            echo "<td>" . htmlspecialchars($registro['h_inicio']) . "</td>";
-            echo "<td>" . htmlspecialchars($registro['rit']) . "</td>";
-            echo "<td>" . htmlspecialchars($registro['caj']) . "</td>";
-            echo "<td>" . htmlspecialchars(strlen($registro['caratulado']) > 30 ? substr($registro['caratulado'], 0, 30) . '...' : $registro['caratulado']) . "</td>";
-            echo "<td>" . htmlspecialchars(strlen($registro['tipo_audiencia']) > 20 ? substr($registro['tipo_audiencia'], 0, 20) . '...' : $registro['tipo_audiencia']) . "</td>";
-            echo "<td>" . htmlspecialchars(strlen($registro['materia']) > 30 ? substr($registro['materia'], 0, 30) . '...' : $registro['materia']) . "</td>";
-            echo "<td>" . htmlspecialchars($registro['juez']) . "</td>";
-            echo "<td>" . htmlspecialchars($registro['acta']) . "</td>";
-            echo "<td>" . htmlspecialchars($registro['ct']) . "</td>";
-            echo "<td>" . htmlspecialchars($registro['cuenta_zoom']) . "</td>";
-            echo "</tr>";
-        }
+    $sql = "INSERT INTO tbl_programada (
+        pro_sa_num_sala, pro_nombre_juez, pro_adm_nombre, pro_ct_nombre,
+        id_tribunal, pro_cod_tribunal, pro_fn_descripcion, pro_origen,
+        pro_rit, pro_motivo, pro_juez_solicitante, pro_etapa,
+        fecha_programada, pro_hora_inicio, pro_hora_termino,
+        pro_bloque_inicio, pro_bloque_termino, pro_cantidad_bloques,
+        pro_res_descripcion, pro_caratula, pro_responsable_agenda,
+        pro_au_descripcion, pro_estado, id_solicitud, pro_curador,
+        pro_radicada, pro_actualizacion, pro_usu_actualizacion,
+        flag_reprogramacion, pro_motivo_repro, pro_check, observacion,
+        infoPublico, pro_check_inicio, pro_check_termino
+    ) VALUES (" . str_repeat('?,', 34) . "?)";
 
-        echo "</tbody></table>";
-        echo "</div>";
+    $stmt = $conexion->prepare($sql);
+    if (!$stmt) {
+        throw new Exception("Error preparar SQL: " . $conexion->error);
+    }
 
-        if (count($datosAudienciasTV) > 3) {
-            echo "<p><em>... y " . (count($datosAudienciasTV) - 3) . " registros más.</em></p>";
+    $registrosInsertados = 0;
+    $registrosConError   = 0;
+    $errores             = [];
+
+    foreach ($datosAudienciasTV as $registro) {
+        try {
+            // Normalizar hora
+            $horaInicio = date('H:i', strtotime($registro['h_inicio']));
+            $infoBloques = $tablaHorarios[$horaInicio] ?? null;
+
+            if (!$infoBloques) {
+                $errores[] = "Fila {$registro['fila']}: hora '{$registro['h_inicio']}' no está en la tabla de horarios permitidos";
+                $registrosConError++;
+                continue;
+            }
+
+            $vars = [
+                (int)$registro['sala'],
+                $registro['juez'],
+                $registro['acta'],
+                $registro['ct'],
+                4,
+                null,
+                null,
+                null,
+                $registro['rit'],
+                'Carga Masiva',
+                null,
+                $registro['tipo_audiencia'],
+                $registro['f_audiencia'],
+                $horaInicio . ':00',
+                $infoBloques['termino'] . ':00',
+                $infoBloques['bloque_inicio'],
+                $infoBloques['bloque_termino'],
+                $infoBloques['cantidad_bloques'],
+                null,
+                $registro['caratulado'],
+                'Cuenta Genérica',
+                $registro['tipo_audiencia'],
+                'P',
+                0,
+                $registro['caj'],
+                'NO RADICADA',
+                null,
+                'Cuenta Genérica',
+                null,
+                null,
+                'En espera',
+                $registro['cuenta_zoom'],
+                null,
+                null,
+                null
+            ];
+
+            // Generar cadena de tipos
+            $types = '';
+            foreach ($vars as $v) {
+                if (is_int($v) || (is_numeric($v) && ctype_digit((string)$v))) {
+                    $types .= 'i';
+                } else {
+                    $types .= 's';
+                }
+            }
+
+            $stmt->bind_param($types, ...$vars);
+
+            if ($stmt->execute()) {
+                $registrosInsertados++;
+            } else {
+                $errores[] = "Error fila {$registro['fila']}: " . $stmt->error;
+                $registrosConError++;
+            }
+        } catch (Exception $e) {
+            $errores[] = "Error fila {$registro['fila']}: " . $e->getMessage();
+            $registrosConError++;
         }
     }
 
-    echo "<hr>";
-    echo "<div class='alert alert-info'>";
-    echo "<h4>🔄 Siguiente paso:</h4>";
-    echo "<p>Los datos han sido preparados y validados correctamente.</p>";
-    echo "<p>Para implementar la inserción en base de datos, será necesario:</p>";
-    echo "<ul>";
-    echo "<li>Crear la tabla correspondiente en la base de datos</li>";
-    echo "<li>Implementar las validaciones específicas del negocio</li>";
-    echo "<li>Agregar el código de inserción SQL</li>";
-    echo "</ul>";
-    echo "</div>";
-} catch (Exception $e) {
-    echo "<div class='alert alert-danger'>";
-    echo "<h3>❌ Error en el procesamiento</h3>";
-    echo "<p><strong>Error:</strong> " . htmlspecialchars($e->getMessage()) . "</p>";
-    echo "<p><strong>Línea:</strong> " . $e->getLine() . "</p>";
-    echo "<p><strong>Archivo:</strong> " . $e->getFile() . "</p>";
-    echo "</div>";
+    $stmt->close();
+    $conexion->close();
 
+    // Calcular tasa de éxito
+    $totalProcesado = count($datosAudienciasTV);
+    $tasaExito = $totalProcesado > 0 ? round(($registrosInsertados / $totalProcesado) * 100, 1) : 0;
+
+    // Determinar status
+    $status = 'success';
+    if ($registrosInsertados == 0) {
+        $status = 'error';
+    } else if ($registrosConError > 0) {
+        $status = 'warning';
+    }
+
+    // Determinar mensaje apropiado
+    $mensaje = 'Proceso completado';
+    if ($status === 'success') {
+        $mensaje = 'Todos los registros fueron insertados exitosamente';
+    } elseif ($status === 'warning') {
+        $mensaje = "Se insertaron $registrosInsertados registros correctamente, pero $registrosConError tuvieron errores";
+    } elseif ($status === 'error') {
+        $mensaje = 'No se pudo insertar ningún registro. Revise los errores detallados';
+    }
+
+    // Debug: Log resultado final
+    error_log("DEBUG - Proceso terminado: $mensaje");
+
+    // Retornar JSON con resultados
+    echo json_encode([
+        'status' => $status,
+        'message' => $mensaje,
+        'registros_correctos' => $registrosInsertados,
+        'registros_error' => $registrosConError,
+        'total_procesado' => $totalProcesado,
+        'tasa_exito' => $tasaExito,
+        'archivo' => $nombreArchivo,
+        'fecha_procesamiento' => date('d/m/Y H:i:s'),
+        'errores' => $errores
+    ]);
+} catch (Exception $e) {
     // Log del error
     error_log("Error en cargaAudienciasTV.php: " . $e->getMessage() . " en línea " . $e->getLine());
-}
 
-// Agregar estilos Bootstrap para mejor presentación
-echo "
-<style>
-body { 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-    margin: 20px;
-    background-color: #f8f9fa;
+    // Determinar tipo de error para dar mensaje más específico
+    $mensaje_error = $e->getMessage();
+    if (strpos($mensaje_error, 'conexión') !== false || strpos($mensaje_error, 'connect') !== false) {
+        $mensaje_error = "Error de conexión con la base de datos. Verifique la configuración.";
+    } elseif (strpos($mensaje_error, 'Excel') !== false || strpos($mensaje_error, 'PHPExcel') !== false) {
+        $mensaje_error = "Error al procesar el archivo Excel. Verifique el formato del archivo.";
+    } elseif (strpos($mensaje_error, 'extensión') !== false || strpos($mensaje_error, 'Extension') !== false) {
+        $mensaje_error = "Formato de archivo no válido. Use Excel (.xlsx, .xls) o CSV.";
+    }
+
+    // Retornar JSON de error
+    echo json_encode([
+        'status' => 'error',
+        'message' => $mensaje_error,
+        'registros_correctos' => 0,
+        'registros_error' => 1,
+        'total_procesado' => 0,
+        'tasa_exito' => 0,
+        'errores' => [$mensaje_error],
+        'error_tecnico' => $e->getMessage() . " (Línea: " . $e->getLine() . ")"
+    ]);
 }
-.alert {
-    padding: 15px;
-    margin: 15px 0;
-    border-radius: 5px;
-}
-.alert-success {
-    background-color: #d4edda;
-    border: 1px solid #c3e6cb;
-    color: #155724;
-}
-.alert-danger {
-    background-color: #f8d7da;
-    border: 1px solid #f5c6cb;
-    color: #721c24;
-}
-.alert-info {
-    background-color: #d1ecf1;
-    border: 1px solid #bee5eb;
-    color: #0c5460;
-}
-.table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 15px 0;
-}
-.table th, .table td {
-    border: 1px solid #dee2e6;
-    padding: 8px;
-    text-align: left;
-    font-size: 12px;
-}
-.table th {
-    background-color: #ff6b35;
-    color: white;
-}
-.table-striped tbody tr:nth-child(odd) {
-    background-color: #f9f9f9;
-}
-h2, h3 { 
-    color: #ff6b35; 
-    border-bottom: 2px solid #ff6b35;
-    padding-bottom: 5px;
-}
-hr { 
-    border: 1px solid #ff6b35; 
-    margin: 20px 0;
-}
-</style>
-";
