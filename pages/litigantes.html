@@ -192,7 +192,7 @@
               </h5>
             </div>
             <div class="card-body p-4">
-              <form action="../php/cargaLitigantes.php" method="POST" class="formularioAjax" data-form="save" autocomplete="off" enctype="multipart/form-data">
+              <form id="formLitigantes" action="../php/cargaLitigantes.php" method="POST" autocomplete="off" enctype="multipart/form-data">
                 <div class="row">
                   <div class="col-12">
                     <div class="form-group mb-4">
@@ -291,6 +291,54 @@
             </div>
           </div>
 
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Resultados -->
+    <div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header" id="modalHeader">
+            <h5 class="modal-title" id="resultModalLabel">
+              <i class="fas fa-users"></i> Resultado de la Carga
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row">
+              <div class="col-md-6 text-center">
+                <div class="card border-success">
+                  <div class="card-body">
+                    <h2 id="registrosCorrectos" class="text-success">0</h2>
+                    <p class="mb-0">Registros Correctos</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 text-center">
+                <div class="card border-danger">
+                  <div class="card-body">
+                    <h2 id="registrosError" class="text-danger">0</h2>
+                    <p class="mb-0">Registros con Error</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="alert mt-4" id="resumenAlert">
+              <p><strong>Total procesado:</strong> <span id="totalProcesado">0</span> registros</p>
+              <p><strong>Tasa de éxito:</strong> <span id="tasaExito">0</span>%</p>
+            </div>
+            
+            <div id="erroresContainer" style="display: none;">
+              <h6>Errores encontrados:</h6>
+              <ul id="listaErrores"></ul>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            <button type="button" class="btn btn-primary" onclick="location.reload()">Cargar Otro Archivo</button>
+          </div>
         </div>
       </div>
     </div>
@@ -457,26 +505,108 @@ Para soporte, contacte al área legal.
           });
         }
         
-        // Manejo del formulario
-        const form = document.querySelector('form.formularioAjax');
+        // Manejo del formulario con AJAX
+        const form = document.getElementById('formLitigantes');
         if (form) {
           form.addEventListener('submit', function(e) {
-            const fileInput = this.querySelector('input[type="file"]');
-            if (!fileInput.files[0]) {
-              e.preventDefault();
-              alert('⚠️ Por favor seleccione un archivo de litigantes antes de continuar.');
-              return false;
-            }
-            
-            if (!confirm('¿Está seguro de que desea cargar estos datos de litigantes?\n\nArchivo: ' + fileInput.files[0].name + '\nTamaño: ' + (fileInput.files[0].size / (1024 * 1024)).toFixed(2) + ' MB\n\n🔒 Los datos personales se procesarán de forma segura y confidencial.')) {
-              e.preventDefault();
-              return false;
-            }
-            
-            handleFormSubmit(this);
+            e.preventDefault();
+            submitFormWithAjax(this);
           });
         }
+      });
+
+      // Función para enviar formulario con AJAX
+      function submitFormWithAjax(form) {
+        const fileInput = form.querySelector('input[type="file"]');
         
+        if (!fileInput.files[0]) {
+          alert('⚠️ Por favor seleccione un archivo de litigantes antes de continuar.');
+          return;
+        }
+        
+        if (!confirm('¿Está seguro de que desea cargar estos datos de litigantes?\n\nArchivo: ' + fileInput.files[0].name + '\nTamaño: ' + (fileInput.files[0].size / (1024 * 1024)).toFixed(2) + ' MB\n\n🔒 Los datos personales se procesarán de forma segura y confidencial.')) {
+          return;
+        }
+        
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        // Mostrar estado de carga
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando litigantes...';
+        submitBtn.disabled = true;
+        
+        const formData = new FormData(form);
+        
+        fetch('../php/cargaLitigantes.php', {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+          showResultModal(data);
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          showResultModal({
+            success: false,
+            message: 'Error de conexión con el servidor. Por favor, verifique su conexión a internet.',
+            type: 'error',
+            details: error.message
+          });
+        })
+        .finally(() => {
+          // Restaurar botón
+          submitBtn.innerHTML = originalText;
+          submitBtn.disabled = false;
+        });
+      }
+
+      // Función para mostrar modal con resultados
+      function showResultModal(data) {
+        // Actualizar contenido del modal
+        document.getElementById('registrosCorrectos').textContent = data.registros_correctos;
+        document.getElementById('registrosError').textContent = data.registros_error;
+        document.getElementById('totalProcesado').textContent = data.total_procesado;
+        document.getElementById('tasaExito').textContent = data.tasa_exito;
+        
+        // Configurar header del modal según el status
+        const modalHeader = document.getElementById('modalHeader');
+        const resumenAlert = document.getElementById('resumenAlert');
+        
+        if (data.status === 'success') {
+          modalHeader.className = 'modal-header bg-success text-white';
+          resumenAlert.className = 'alert alert-success mt-4';
+        } else if (data.status === 'warning') {
+          modalHeader.className = 'modal-header bg-warning text-dark';
+          resumenAlert.className = 'alert alert-warning mt-4';
+        } else {
+          modalHeader.className = 'modal-header bg-danger text-white';
+          resumenAlert.className = 'alert alert-danger mt-4';
+        }
+        
+        // Mostrar errores si los hay
+        const erroresContainer = document.getElementById('erroresContainer');
+        const listaErrores = document.getElementById('listaErrores');
+        
+        if (data.errores && data.errores.length > 0) {
+          listaErrores.innerHTML = '';
+          data.errores.forEach(error => {
+            const li = document.createElement('li');
+            li.textContent = error;
+            listaErrores.appendChild(li);
+          });
+          erroresContainer.style.display = 'block';
+        } else {
+          erroresContainer.style.display = 'none';
+        }
+        
+        // Mostrar el modal
+        const modal = new bootstrap.Modal(document.getElementById('resultModal'));
+        modal.show();
+      }
+        
+      // Event listeners continuation
+      document.addEventListener('DOMContentLoaded', function() {
         // Inicializar tooltips
         if (typeof bootstrap !== 'undefined') {
           const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));

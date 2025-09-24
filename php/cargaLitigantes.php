@@ -1,76 +1,259 @@
-<?php 
-  // require("../config/database/conexion.php");
-  require_once('funcionesBD.php');
-  var_dump($_REQUEST);
+<?php
 
+/**
+ * Archivo para cargar datos de Litigantes desde Excel
+ * Versión: 3.0 - Retorna JSON para modal
+ * Fecha: 24 Septiembre 2025
+ */
 
-          if (isset($_FILES['archivoExcel'])) {
+require_once '../config/config.php';
+require_once '../config/database/conexion.php';
+require_once '../lib/PHPExcel/PHPExcel.php';
+require_once '../lib/function.php';
+require_once 'funcionesBD.php';
 
-          set_time_limit(2000000);
-          ini_set('memory_limit', '-1');
-          $encontrado = 0;
-          $fallido = 0;
+// Configurar cabeceras para JSON
+header('Content-Type: application/json; charset=utf-8');
 
-          //extract($_POST);
-          $archivo = $_FILES['archivoExcel']['name'];
-          $tipo = $_FILES['archivoExcel']['type'];
-          $destino = "bak_" . $archivo;
-          if (copy($_FILES['archivoExcel']['tmp_name'], $destino)) {
-            //echo "Archivo Cargado Con Éxito";
-          } else {
-            echo "Error Al Cargar el Archivo";
-          }
-          if (file_exists("bak_" . $archivo)) {
-            /** Clases necesarias */
-            require_once('../lib/PHPExcel/PHPExcel.php');
-            require_once('../lib/PHPExcel/PHPExcel/Reader/Excel2007.php');
-            // Cargando la hoja de cálculo
-            $objReader = new PHPExcel_Reader_Excel2007();
-            $objPHPExcel = $objReader->load("bak_" . $archivo);
-            $objFecha = new PHPExcel_Shared_Date();
+// ======================
+// Verificar archivo
+// ======================
+if (!isset($_FILES['archivoExcel']) || $_FILES['archivoExcel']['error'] !== UPLOAD_ERR_OK) {
+  $error_message = 'No se recibió el archivo';
 
-            $objPHPExcel->setActiveSheetIndex(0);
-            $i = 2;
-            while ($a = $objPHPExcel->getActiveSheet()->getCell('A' . $i)->getCalculatedValue()) {
-              if ($a =! "") {
-                  $_DATOS_EXCEL[$i]['rit'] =trim($objPHPExcel->getActiveSheet()->getCell('A' . $i)->getCalculatedValue());
-                  $_DATOS_EXCEL[$i]['ruc'] =trim($objPHPExcel->getActiveSheet()->getCell('B' . $i)->getCalculatedValue());
-                  $_DATOS_EXCEL[$i]['nombre'] = trim($objPHPExcel->getActiveSheet()->getCell('C' . $i)->getCalculatedValue());
-                  $_DATOS_EXCEL[$i]['tipoLitigante'] = trim($objPHPExcel->getActiveSheet()->getCell('F' . $i)->getCalculatedValue()) ;
-                  $_DATOS_EXCEL[$i]['usuarioEliminacion'] = trim($objPHPExcel->getActiveSheet()->getCell('G' . $i)->getCalculatedValue());
-                  $_DATOS_EXCEL[$i]['fechaEliminacion'] = trim($objPHPExcel->getActiveSheet()->getCell('H' . $i)->getCalculatedValue());
-                  $_DATOS_EXCEL[$i]['motivoEliminacion'] = trim($objPHPExcel->getActiveSheet()->getCell('I' . $i)->getCalculatedValue());
-                  // $_DATOS_EXCEL[$i]['usuarioEliminacion'] = trim($objPHPExcel->getActiveSheet()->getCell('G' . $i)->getCalculatedValue());
-                $i++;
-              } else {
-                break;
-              }
-            }
-            //var_dump($_DATOS_EXCEL);
-            //con el array completado, lo subo a la base de dato, por lo que necesitaré la nueva conexión.
-            if(insertaLitigantes($_DATOS_EXCEL)){
-              // $alerta = [
-              //   'Alerta' => 'simple',
-              //   'Titulo' => 'CARGA CORRECTA ✔️',
-              //   'Texto' => 'Las audiencias fueroncargadas de manera correcta.',
-              //   'Tipo' => 'success',
-              //   'Timer' => '1500',
-              //   'Tabla' => 'no'
-              // ];
-              // echo json_encode($alerta);
-              // exit();
-            }else {
-              echo 'error';
-            }
-          }
-          //si por algo no cargo el archivo bak_ 
-          else {
-            //echo "Necesitas primero importar el archivo";
-          }
-          $i = 0;
-        } else {
-          //header("Location:index.html");
-          echo 'noo llegó el archiv';
-        }
+  if (isset($_FILES['archivoExcel']['error'])) {
+    switch ($_FILES['archivoExcel']['error']) {
+      case UPLOAD_ERR_INI_SIZE:
+      case UPLOAD_ERR_FORM_SIZE:
+        $error_message = 'El archivo es demasiado grande. Tamaño máximo permitido: 50MB';
+        break;
+      case UPLOAD_ERR_PARTIAL:
+        $error_message = 'El archivo se subió parcialmente. Intente nuevamente';
+        break;
+      case UPLOAD_ERR_NO_FILE:
+        $error_message = 'No se seleccionó ningún archivo';
+        break;
+      case UPLOAD_ERR_NO_TMP_DIR:
+        $error_message = 'Error del servidor: falta carpeta temporal';
+        break;
+      case UPLOAD_ERR_CANT_WRITE:
+        $error_message = 'Error del servidor: no se puede escribir el archivo';
+        break;
+      default:
+        $error_message = 'Error desconocido al subir el archivo';
+        break;
+    }
+  }
 
-          exit();
+  echo json_encode([
+    'status' => 'error',
+    'message' => $error_message,
+    'registros_correctos' => 0,
+    'registros_error' => 1,
+    'total_procesado' => 0,
+    'tasa_exito' => 0,
+    'errores' => [$error_message]
+  ]);
+  exit;
+}
+
+try {
+  set_time_limit(2000000);
+  ini_set('memory_limit', '-1');
+
+  $archivoTemporal   = $_FILES['archivoExcel']['tmp_name'];
+  $nombreArchivo     = $_FILES['archivoExcel']['name'];
+  $extensionArchivo  = pathinfo($nombreArchivo, PATHINFO_EXTENSION);
+
+  // Debug: Log información del archivo
+  error_log("DEBUG - Archivo recibido: $nombreArchivo, Extensión: $extensionArchivo, Tamaño: " . $_FILES['archivoExcel']['size']);
+
+  // Validar extensión
+  $extensionesPermitidas = ['xlsx', 'xls', 'csv'];
+  if (!in_array(strtolower($extensionArchivo), $extensionesPermitidas)) {
+    echo json_encode([
+      'status' => 'error',
+      'message' => "Extensión no permitida: $extensionArchivo",
+      'registros_correctos' => 0,
+      'registros_error' => 1,
+      'total_procesado' => 0,
+      'tasa_exito' => 0,
+      'errores' => ["Extensión $extensionArchivo no está permitida"]
+    ]);
+    exit;
+  }
+
+  // Crear copia de respaldo
+  $destino = "bak_" . $nombreArchivo;
+  if (!copy($archivoTemporal, $destino)) {
+    echo json_encode([
+      'status' => 'error',
+      'message' => 'Error al crear copia de respaldo del archivo',
+      'registros_correctos' => 0,
+      'registros_error' => 1,
+      'total_procesado' => 0,
+      'tasa_exito' => 0,
+      'errores' => ['No se pudo crear la copia de respaldo']
+    ]);
+    exit;
+  }
+
+  // Cargar Excel
+  if (strtolower($extensionArchivo) === 'csv') {
+    $objReader = PHPExcel_IOFactory::createReader('CSV');
+  } else {
+    $objReader = PHPExcel_IOFactory::createReader('Excel2007');
+    if (strtolower($extensionArchivo) === 'xls') {
+      $objReader = PHPExcel_IOFactory::createReader('Excel5');
+    }
+  }
+
+  // Debug: Log antes de cargar Excel
+  error_log("DEBUG - Intentando cargar archivo con " . get_class($objReader));
+
+  $objPHPExcel = $objReader->load($destino);
+  $objWorksheet = $objPHPExcel->getActiveSheet();
+
+  // Debug: Log después de cargar
+  error_log("DEBUG - Archivo cargado exitosamente");
+
+  $highestRow = $objWorksheet->getHighestRow();
+  $highestColumn = $objWorksheet->getHighestColumn();
+  $highestColumnIndex = PHPExcel_Cell::columnIndexFromString($highestColumn);
+
+  // Validar que el archivo tenga contenido
+  if ($highestRow < 2) {
+    echo json_encode([
+      'status' => 'error',
+      'message' => 'El archivo está vacío o solo tiene encabezados',
+      'registros_correctos' => 0,
+      'registros_error' => 1,
+      'total_procesado' => 0,
+      'tasa_exito' => 0,
+      'errores' => ['El archivo debe tener al menos una fila de datos además del encabezado']
+    ]);
+    exit;
+  }
+
+  // Validar que tenga al menos 9 columnas (A-I)
+  if ($highestColumnIndex < 9) {
+    echo json_encode([
+      'status' => 'error',
+      'message' => 'El archivo no tiene las columnas requeridas',
+      'registros_correctos' => 0,
+      'registros_error' => 1,
+      'total_procesado' => 0,
+      'tasa_exito' => 0,
+      'errores' => ["El archivo debe tener al menos 9 columnas (A-I). Encontradas: $highestColumnIndex"]
+    ]);
+    exit;
+  }
+
+  // ======================
+  // Procesar filas Excel
+  // ======================
+  $datosLitigantes = [];
+
+  for ($i = 2; $i <= $highestRow; $i++) {
+    $rit = trim($objWorksheet->getCell('A' . $i)->getCalculatedValue());
+
+    if (!empty($rit)) {
+      $datosLitigantes[] = [
+        'fila' => $i,
+        'rit' => $rit,
+        'ruc' => trim($objWorksheet->getCell('B' . $i)->getCalculatedValue()),
+        'nombre' => trim($objWorksheet->getCell('C' . $i)->getCalculatedValue()),
+        'tipoLitigante' => trim($objWorksheet->getCell('F' . $i)->getCalculatedValue()),
+        'usuarioEliminacion' => trim($objWorksheet->getCell('G' . $i)->getCalculatedValue()),
+        'fechaEliminacion' => trim($objWorksheet->getCell('H' . $i)->getCalculatedValue()),
+        'motivoEliminacion' => trim($objWorksheet->getCell('I' . $i)->getCalculatedValue())
+      ];
+    }
+  }
+
+  // Verificar que se procesaron datos
+  if (empty($datosLitigantes)) {
+    echo json_encode([
+      'status' => 'error',
+      'message' => 'No se encontraron datos válidos para procesar',
+      'registros_correctos' => 0,
+      'registros_error' => 1,
+      'total_procesado' => 0,
+      'tasa_exito' => 0,
+      'errores' => ['El archivo no contiene datos válidos o todas las filas están vacías']
+    ]);
+    exit;
+  }
+
+  // ======================
+  // Inserción a BD
+  // ======================
+
+  // Debug: Log antes de insertar
+  error_log("DEBUG - Intentando insertar " . count($datosLitigantes) . " registros");
+
+  $resultado = insertaLitigantes($datosLitigantes);
+
+  if ($resultado) {
+    // Calcular estadísticas
+    $totalProcesado = count($datosLitigantes);
+    $registrosInsertados = $totalProcesado; // Asumimos que si no hay error, se insertaron todos
+    $registrosConError = 0;
+    $tasaExito = 100.0;
+
+    // Debug: Log resultado exitoso
+    error_log("DEBUG - Inserción exitosa: $registrosInsertados registros");
+
+    echo json_encode([
+      'status' => 'success',
+      'message' => 'Todos los registros fueron insertados exitosamente',
+      'registros_correctos' => $registrosInsertados,
+      'registros_error' => $registrosConError,
+      'total_procesado' => $totalProcesado,
+      'tasa_exito' => $tasaExito,
+      'archivo' => $nombreArchivo,
+      'fecha_procesamiento' => date('d/m/Y H:i:s'),
+      'errores' => []
+    ]);
+  } else {
+    // Debug: Log error en inserción
+    error_log("DEBUG - Error en inserción de datos");
+
+    echo json_encode([
+      'status' => 'error',
+      'message' => 'Error al insertar los datos en la base de datos',
+      'registros_correctos' => 0,
+      'registros_error' => count($datosLitigantes),
+      'total_procesado' => count($datosLitigantes),
+      'tasa_exito' => 0,
+      'archivo' => $nombreArchivo,
+      'fecha_procesamiento' => date('d/m/Y H:i:s'),
+      'errores' => ['Error al insertar los datos en la base de datos']
+    ]);
+  }
+} catch (Exception $e) {
+  // Log del error
+  error_log("Error en cargaLitigantes.php: " . $e->getMessage() . " en línea " . $e->getLine());
+
+  // Determinar tipo de error para dar mensaje más específico
+  $mensaje_error = $e->getMessage();
+  if (strpos($mensaje_error, 'conexión') !== false || strpos($mensaje_error, 'connect') !== false) {
+    $mensaje_error = "Error de conexión con la base de datos. Verifique la configuración.";
+  } elseif (strpos($mensaje_error, 'Excel') !== false || strpos($mensaje_error, 'PHPExcel') !== false) {
+    $mensaje_error = "Error al procesar el archivo Excel. Verifique el formato del archivo.";
+  } elseif (strpos($mensaje_error, 'extensión') !== false || strpos($mensaje_error, 'Extension') !== false) {
+    $mensaje_error = "Formato de archivo no válido. Use Excel (.xlsx, .xls) o CSV.";
+  }
+
+  // Retornar JSON de error
+  echo json_encode([
+    'status' => 'error',
+    'message' => $mensaje_error,
+    'registros_correctos' => 0,
+    'registros_error' => 1,
+    'total_procesado' => 0,
+    'tasa_exito' => 0,
+    'errores' => [$mensaje_error],
+    'error_tecnico' => $e->getMessage() . " (Línea: " . $e->getLine() . ")"
+  ]);
+}

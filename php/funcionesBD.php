@@ -1,224 +1,270 @@
 <?php
-  require("../config/database/conexion.php");
+require("../config/database/conexion.php");
 
-  function insertaAudiencias($matriz){
-    //var_dump($matriz);
-    global $conexion;
-    $error = "";
-    $correcto = "";
+function insertaAudiencias($matriz)
+{
+  global $conexion;
+  $error = 0;
+  $correcto = 0;
+  $errores_detalle = [];
+
+  try {
     foreach ($matriz as $key) {
       $sql = "INSERT INTO tbl_caratula (rit, ruc, fechaIngreso, participantes, materia) VALUES (:rit, :ruc, :fechaIngreso, :participantes, :materia)";
       $stmt = $conexion->prepare($sql);
-      $stmt->bindParam(':rit', $key["rit"]);
-      $stmt->bindParam(':ruc', $key["ruc"]);
-      $stmt->bindParam(':fechaIngreso', $key["fechaIngreso"]);
-      $stmt->bindParam(':participantes', $key["participantes"]);
-      $stmt->bindParam(':materia', $key["materia"]);
-      
+      $stmt->bindParam(':rit', $key["rit"], PDO::PARAM_STR);
+      $stmt->bindParam(':ruc', $key["ruc"], PDO::PARAM_STR);
+      $stmt->bindParam(':fechaIngreso', $key["fechaIngreso"], PDO::PARAM_STR);
+      $stmt->bindParam(':participantes', $key["participantes"], PDO::PARAM_STR);
+      $stmt->bindParam(':materia', $key["materia"], PDO::PARAM_STR);
+
       if (!$stmt->execute()) {
-        // Manejar error
-        //echo "Error al insertar: " . $stmt->errorInfo()[2];
-        $error ++;
-      }else {
-        $correcto ++;
+        $error_info = $stmt->errorInfo();
+        $errores_detalle[] = "Fila " . (isset($key["fila"]) ? $key["fila"] : 'N/A') . ": " . $error_info[2];
+        error_log("Error SQL en insertaAudiencias: " . $error_info[2] . " - Datos: " . json_encode($key));
+        $error++;
+      } else {
+        $correcto++;
       }
     }
-    echo "Correctos: " . $correcto . " Errores: " . $error;
 
+    // Log para debug (no echo que interfiere con JSON)
+    error_log("insertaAudiencias - Correctos: $correcto, Errores: $error");
+
+    // Retornar true solo si no hubo errores
+    return $error === 0;
+  } catch (Exception $e) {
+    error_log("Excepción en insertaAudiencias: " . $e->getMessage());
+    return false;
   }
+}
 
-  function insertaLitigantes($matriz){
-    //var_dump($matriz);
-    global $conexion;
-    $error = "";
-    $correcto = "";
+function insertaLitigantes($matriz)
+{
+  global $conexion;
+  $error = 0;
+  $correcto = 0;
+  $errores_detalle = [];
+
+  try {
     foreach ($matriz as $key) {
       $sql = "INSERT INTO tbl_litigantes (rit, ruc, nombre, tipoLitigante, usuarioEliminacion, fechaEliminacion, motivoEliminacion) VALUES (:rit, :ruc, :nombre, :tipoLitigante, :usuarioEliminacion, :fechaEliminacion, :motivoEliminacion)";
       $stmt = $conexion->prepare($sql);
-      $stmt->bindParam(':rit', $key["rit"]);
-      $stmt->bindParam(':ruc', $key["ruc"]);
-      $stmt->bindParam(':nombre', $key["nombre"]);
-      $stmt->bindParam(':tipoLitigante', $key["tipoLitigante"]);
-      $stmt->bindParam(':usuarioEliminacion', $key["usuarioEliminacion"]);
-      $stmt->bindParam(':fechaEliminacion', $key["fechaEliminacion"]);
-      $stmt->bindParam(':motivoEliminacion', $key["motivoEliminacion"]);
+      $stmt->bindParam(':rit', $key["rit"], PDO::PARAM_STR);
+      $stmt->bindParam(':ruc', $key["ruc"], PDO::PARAM_STR);
+      $stmt->bindParam(':nombre', $key["nombre"], PDO::PARAM_STR);
+      $stmt->bindParam(':tipoLitigante', $key["tipoLitigante"], PDO::PARAM_STR);
+      $stmt->bindParam(':usuarioEliminacion', $key["usuarioEliminacion"], PDO::PARAM_STR);
+      $stmt->bindParam(':fechaEliminacion', $key["fechaEliminacion"], PDO::PARAM_STR);
+      $stmt->bindParam(':motivoEliminacion', $key["motivoEliminacion"], PDO::PARAM_STR);
+
       if (!$stmt->execute()) {
-        // Manejar error
-        //echo "Error al insertar: " . $stmt->errorInfo()[2];
-        $error ++;
-      }else {
-        $correcto ++;
+        $error_info = $stmt->errorInfo();
+        $errores_detalle[] = "Fila " . $key["fila"] . ": " . $error_info[2];
+        error_log("Error SQL en insertaLitigantes: " . $error_info[2] . " - Datos: " . json_encode($key));
+        $error++;
+      } else {
+        $correcto++;
       }
     }
-    echo "Correctos: " . $correcto . " Errores: " . $error;
-  }
 
-  function eliminaLitigantes($matriz){
-    //var_dump($matriz);
-    global $conexion;
-    $error = "";
-    $correcto = "";
+    // Log para debug (no echo que interfiere con JSON)
+    error_log("insertaLitigantes - Correctos: $correcto, Errores: $error");
+
+    // Retornar true solo si no hubo errores
+    return $error === 0;
+  } catch (Exception $e) {
+    error_log("Excepción en insertaLitigantes: " . $e->getMessage());
+    return false;
+  }
+}
+
+function eliminaLitigantes($matriz)
+{
+  global $conexion;
+  $error = 0;
+  $correcto = 0;
+  $errores_detalle = [];
+
+  try {
     foreach ($matriz as $key) {
       $sql = "DELETE FROM tbl_litigantes WHERE (rit = :rit AND ruc = :ruc AND nombre = :nombre AND tipoLitigante = :tipoLitigante)";
       $stmt = $conexion->prepare($sql);
-      $stmt->bindParam(':rit', $key["rit"]);
-      $stmt->bindParam(':ruc', $key["ruc"]);
-      $stmt->bindParam(':nombre', $key["nombre"]);
-      $stmt->bindParam(':tipoLitigante', $key["tipoLitigante"]);
+      $stmt->bindParam(':rit', $key["rit"], PDO::PARAM_STR);
+      $stmt->bindParam(':ruc', $key["ruc"], PDO::PARAM_STR);
+      $stmt->bindParam(':nombre', $key["nombre"], PDO::PARAM_STR);
+      $stmt->bindParam(':tipoLitigante', $key["tipoLitigante"], PDO::PARAM_STR);
+
       if (!$stmt->execute()) {
-        // Manejar error
-        //echo "Error al insertar: " . $stmt->errorInfo()[2];
-        $error ++;
-      }else {
-        $correcto ++;
+        $error_info = $stmt->errorInfo();
+        $errores_detalle[] = "Fila " . (isset($key["fila"]) ? $key["fila"] : 'N/A') . ": " . $error_info[2];
+        error_log("Error SQL en eliminaLitigantes: " . $error_info[2] . " - Datos: " . json_encode($key));
+        $error++;
+      } else {
+        $correcto++;
       }
     }
-    echo "Correctos: " . $correcto . " Errores: " . $error;
-  }
 
-  function insertaHorasAudiencias($matriz){
+    // Log para debug (no echo que interfiere con JSON)
+    error_log("eliminaLitigantes - Correctos: $correcto, Errores: $error");
+
+    // Retornar true solo si no hubo errores
+    return $error === 0;
+  } catch (Exception $e) {
+    error_log("Excepción en eliminaLitigantes: " . $e->getMessage());
+    return false;
+  }
+}
+
+function insertaHorasAudiencias($matriz)
+{
+  global $conexion;
+  $error = 0;
+  $correcto =  0;
+  foreach ($matriz as $key) {
+    $sql = "INSERT INTO tbl_programacion_audiencias (fechaHora, sala, tipoBloque, juezAudiencia, cuentaZoom, estado) VALUES (:fechaHora, :sala, :tipoBloque, :juezAudiencia, :zoom, :estado)";
+    $stmt = $conexion->prepare($sql);
+    $stmt->bindParam(':fechaHora', $key["fechaHora"]);
+    $stmt->bindParam(':sala', $key["sala"]);
+    $stmt->bindParam(':tipoBloque', $key["tipoBloque"]);
+    $stmt->bindParam(':juezAudiencia', $key["juezAudiencia"]);
+    $stmt->bindParam(':zoom', $key["zoom"]);
+    $stmt->bindParam(':estado', $key["estado"]);
+    if (!$stmt->execute()) {
+      // Manejar error
+      //echo "Error al insertar: " . $stmt->errorInfo()[2];
+      $error++;
+    } else {
+      $correcto++;
+    }
+  }
+  echo "Correctos: " . $correcto . " Errores: " . $error;
+}
+
+function cargaCursosFuncionarios1($matriz)
+{
+  global $conexion;
+  $error = 0;
+  $correcto =  0;
+  var_dump($matriz);
+  foreach ($matriz as $key) {
+    //primreo obtengo la unidad del funcionario.
     global $conexion;
-    $error = 0;
-    $correcto =  0;
-    foreach ($matriz as $key) {
-      $sql = "INSERT INTO tbl_programacion_audiencias (fechaHora, sala, tipoBloque, juezAudiencia, cuentaZoom, estado) VALUES (:fechaHora, :sala, :tipoBloque, :juezAudiencia, :zoom, :estado)";
-      $stmt = $conexion->prepare($sql);
-      $stmt->bindParam(':fechaHora', $key["fechaHora"]);
-      $stmt->bindParam(':sala', $key["sala"]);
-      $stmt->bindParam(':tipoBloque', $key["tipoBloque"]);
-      $stmt->bindParam(':juezAudiencia', $key["juezAudiencia"]);
-      $stmt->bindParam(':zoom', $key["zoom"]);
-      $stmt->bindParam(':estado', $key["estado"]);
-      if (!$stmt->execute()) {
-        // Manejar error
-        //echo "Error al insertar: " . $stmt->errorInfo()[2];
-        $error ++;
-      }else {
-        $correcto ++;
-      }
+    $sql = "SELECT id_unidad AS unidad FROM tbl_funcionarios_vigencia WHERE CURDATE() BETWEEN desde AND hasta AND rut = :rut limit 1";
+    $stmt = $conexion->prepare($sql);
+    $stmt->bindParam(':rut', $key['rut']);
+    if (!$stmt->execute()) {
+      echo 'Error al pillar la unidad, el rut es $key["rut"]';
+      exit();
+    } else {
+      $unidad = $stmt->fetch(PDO::FETCH_ASSOC);
     }
-    echo "Correctos: " . $correcto . " Errores: " . $error;
+    $sql = "INSERT INTO tbl_ausentismo_funcionarios (rut, desde, hasta, estado, unidad, tipoPermiso) VALUES (:rut, :desde, :hasta, 3, :unidad, 5)";
+    $stmt = $conexion->prepare($sql);
+    $stmt->bindParam(':rut', $key["rut"]);
+    $stmt->bindParam(':desde', $key["fecha"]);
+    $stmt->bindParam(':hasta', $key["fecha"]);
+    $stmt->bindParam(':unidad', $unidad["unidad"]);
+    if (!$stmt->execute()) {
+      // Manejar error
+      //echo "Error al insertar: " . $stmt->errorInfo()[2];
+      $error++;
+    } else {
+      $correcto++;
+    }
   }
+  echo "Correctos: " . $correcto . " Errores: " . $error;
+}
 
-  function cargaCursosFuncionarios1($matriz){
+function cargaCursosFuncionarios2($matriz)
+{
+  global $conexion;
+  $error = 0;
+  $correcto =  0;
+  var_dump($matriz);
+  foreach ($matriz as $key) {
+    //primreo obtengo la unidad del funcionario.
     global $conexion;
-    $error = 0;
-    $correcto =  0;
-    var_dump($matriz);
-    foreach ($matriz as $key) {
-      //primreo obtengo la unidad del funcionario.
-      global $conexion;
-      $sql = "SELECT id_unidad AS unidad FROM tbl_funcionarios_vigencia WHERE CURDATE() BETWEEN desde AND hasta AND rut = :rut limit 1";
-      $stmt = $conexion->prepare($sql);
-      $stmt->bindParam(':rut', $key['rut']);
-      if (!$stmt->execute()) {
-        echo 'Error al pillar la unidad, el rut es $key["rut"]';
-        exit();
-      }else{
-        $unidad = $stmt->fetch(PDO::FETCH_ASSOC);
-      }
-      $sql = "INSERT INTO tbl_ausentismo_funcionarios (rut, desde, hasta, estado, unidad, tipoPermiso) VALUES (:rut, :desde, :hasta, 3, :unidad, 5)";
-      $stmt = $conexion->prepare($sql);
-      $stmt->bindParam(':rut', $key["rut"]);
-      $stmt->bindParam(':desde', $key["fecha"]);
-      $stmt->bindParam(':hasta', $key["fecha"]);
-      $stmt->bindParam(':unidad', $unidad["unidad"]);
-      if (!$stmt->execute()) {
-        // Manejar error
-        //echo "Error al insertar: " . $stmt->errorInfo()[2];
-        $error ++;
-      }else {
-        $correcto ++;
-      }
+    $sql = "SELECT id_unidad AS unidad FROM tbl_funcionarios_vigencia WHERE CURDATE() BETWEEN desde AND hasta AND rut = :rut limit 1";
+    $stmt = $conexion->prepare($sql);
+    $stmt->bindParam(':rut', $key['rut']);
+    if (!$stmt->execute()) {
+      echo 'Error al pillar la unidad, el rut es $key["rut"]';
+      exit();
+    } else {
+      $unidad = $stmt->fetch(PDO::FETCH_ASSOC);
     }
-    echo "Correctos: " . $correcto . " Errores: " . $error;
+    $sql = "INSERT INTO tbl_ausentismo_funcionarios (rut, desde, hasta, estado, unidad, tipoPermiso) VALUES (:rut, :desde, :hasta, 3, :unidad, 5)";
+    $stmt = $conexion->prepare($sql);
+    $stmt->bindParam(':rut', $key["rut"]);
+    $stmt->bindParam(':desde', $key["fechaInicio"]);
+    $stmt->bindParam(':hasta', $key["fechaTermino"]);
+    $stmt->bindParam(':unidad', $unidad["unidad"]);
+    if (!$stmt->execute()) {
+      // Manejar error
+      //echo "Error al insertar: " . $stmt->errorInfo()[2];
+      $error++;
+    } else {
+      $correcto++;
+    }
   }
+  echo "Correctos: " . $correcto . " Errores: " . $error;
+}
 
-  function cargaCursosFuncionarios2($matriz){
+function cargaCursosFuncionarios3($matriz)
+{
+  global $conexion;
+  $error = 0;
+  $correcto =  0;
+  var_dump($matriz);
+  foreach ($matriz as $key) {
+    //primreo obtengo la unidad del funcionario.
     global $conexion;
-    $error = 0;
-    $correcto =  0;
-    var_dump($matriz);
-    foreach ($matriz as $key) {
-      //primreo obtengo la unidad del funcionario.
-      global $conexion;
-      $sql = "SELECT id_unidad AS unidad FROM tbl_funcionarios_vigencia WHERE CURDATE() BETWEEN desde AND hasta AND rut = :rut limit 1";
-      $stmt = $conexion->prepare($sql);
-      $stmt->bindParam(':rut', $key['rut']);
-      if (!$stmt->execute()) {
-        echo 'Error al pillar la unidad, el rut es $key["rut"]';
-        exit();
-      }else{
-        $unidad = $stmt->fetch(PDO::FETCH_ASSOC);
-      }
-      $sql = "INSERT INTO tbl_ausentismo_funcionarios (rut, desde, hasta, estado, unidad, tipoPermiso) VALUES (:rut, :desde, :hasta, 3, :unidad, 5)";
-      $stmt = $conexion->prepare($sql);
-      $stmt->bindParam(':rut', $key["rut"]);
-      $stmt->bindParam(':desde', $key["fechaInicio"]);
-      $stmt->bindParam(':hasta', $key["fechaTermino"]);
-      $stmt->bindParam(':unidad', $unidad["unidad"]);
-      if (!$stmt->execute()) {
-        // Manejar error
-        //echo "Error al insertar: " . $stmt->errorInfo()[2];
-        $error ++;
-      }else {
-        $correcto ++;
-      }
-    }
-    echo "Correctos: " . $correcto . " Errores: " . $error;
-  }
 
-  function cargaCursosFuncionarios3($matriz){
+    $sql = "INSERT INTO tbl_ausentismo_jueces (rut, desde, hasta, tipoPermiso, estado) VALUES (:rut, :desde, :hasta, 5, 3)";
+    $stmt = $conexion->prepare($sql);
+    $stmt->bindParam(':rut', $key["rut"]);
+    $stmt->bindParam(':desde', $key["fecha"]);
+    $stmt->bindParam(':hasta', $key["fecha"]);
+    if (!$stmt->execute()) {
+      // Manejar error
+      //echo "Error al insertar: " . $stmt->errorInfo()[2];
+      $error++;
+    } else {
+      $correcto++;
+    }
+  }
+  echo "Correctos: " . $correcto . " Errores: " . $error;
+}
+
+function cargaCursosFuncionarios4($matriz)
+{
+  global $conexion;
+  $error = 0;
+  $correcto =  0;
+  var_dump($matriz);
+  foreach ($matriz as $key) {
+    //primreo obtengo la unidad del funcionario.
     global $conexion;
-    $error = 0;
-    $correcto =  0;
-    var_dump($matriz);
-    foreach ($matriz as $key) {
-      //primreo obtengo la unidad del funcionario.
-      global $conexion;
 
-      $sql = "INSERT INTO tbl_ausentismo_jueces (rut, desde, hasta, tipoPermiso, estado) VALUES (:rut, :desde, :hasta, 5, 3)";
-      $stmt = $conexion->prepare($sql);
-      $stmt->bindParam(':rut', $key["rut"]);
-      $stmt->bindParam(':desde', $key["fecha"]);
-      $stmt->bindParam(':hasta', $key["fecha"]);
-      if (!$stmt->execute()) {
-        // Manejar error
-        //echo "Error al insertar: " . $stmt->errorInfo()[2];
-        $error ++;
-      }else {
-        $correcto ++;
-      }
+    $sql = "INSERT INTO tbl_ausentismo_jueces (rut, desde, hasta, tipoPermiso, estado) VALUES (:rut, :desde, :hasta, 5, 3)";
+    $stmt = $conexion->prepare($sql);
+    $stmt->bindParam(':rut', $key["rut"]);
+    $stmt->bindParam(':desde', $key["fechaInicio"]);
+    $stmt->bindParam(':hasta', $key["fechaTermino"]);
+    if (!$stmt->execute()) {
+      // Manejar error
+      //echo "Error al insertar: " . $stmt->errorInfo()[2];
+      $error++;
+    } else {
+      $correcto++;
     }
-    echo "Correctos: " . $correcto . " Errores: " . $error;
   }
+  echo "Correctos: " . $correcto . " Errores: " . $error;
+}
 
-  function cargaCursosFuncionarios4($matriz){
-    global $conexion;
-    $error = 0;
-    $correcto =  0;
-    var_dump($matriz);
-    foreach ($matriz as $key) {
-      //primreo obtengo la unidad del funcionario.
-      global $conexion;
-
-      $sql = "INSERT INTO tbl_ausentismo_jueces (rut, desde, hasta, tipoPermiso, estado) VALUES (:rut, :desde, :hasta, 5, 3)";
-      $stmt = $conexion->prepare($sql);
-      $stmt->bindParam(':rut', $key["rut"]);
-      $stmt->bindParam(':desde', $key["fechaInicio"]);
-      $stmt->bindParam(':hasta', $key["fechaTermino"]);
-      if (!$stmt->execute()) {
-        // Manejar error
-        //echo "Error al insertar: " . $stmt->errorInfo()[2];
-        $error ++;
-      }else {
-        $correcto ++;
-      }
-    }
-    echo "Correctos: " . $correcto . " Errores: " . $error;
-  }
-
-  function cargaLibroAudienciaSitfa($matriz){
+function cargaLibroAudienciaSitfa($matriz)
+{
   global $conexion;
   $error = 0;
   $correcto =  0;
