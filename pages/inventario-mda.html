@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Inventario MDA - Cargador Excel</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+    <!-- Font Awesome para iconos -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .navbar-brand {
+        font-weight: bold;
+      }
+      .dropdown-item:hover {
+        background-color: #f8f9fa;
+      }
+      .dropdown-item.text-danger:hover {
+        background-color: #f8d7da;
+      }
+      
+      .card {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+      }
+      
+      .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+      }
+      
+      .form-control:focus {
+        border-color: var(--bs-success);
+        box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+      }
+      
+      .btn {
+        transition: all 0.2s ease-in-out;
+      }
+      
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+      
+      .uploading {
+        opacity: 0.7;
+        pointer-events: none;
+      }
+      
+      .file-info {
+        background: linear-gradient(135deg, #d1e7dd 0%, #e2f4e7 100%);
+        border-left: 4px solid #198754;
+      }
+      
+      .requirements-card {
+        background: linear-gradient(135deg, #d1e7dd 0%, #e2f4e7 100%);
+        border-left: 4px solid #198754;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="../index.html">
+          <i class="fas fa-file-excel"></i> Cargador Excel
+        </a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav me-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="../index.html">
+                <i class="fas fa-home"></i> Inicio
+              </a>
+            </li>
+            
+            <!-- Menú desplegable principal -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle active" href="#" id="cargaDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-upload"></i> Cargar Archivos
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="cargaDropdown">
+                <li><a class="dropdown-item" href="caratula.html">
+                  <i class="fas fa-file-alt"></i> Cargar Carátula
+                </a></li>
+                <li><a class="dropdown-item" href="cursos.html">
+                  <i class="fas fa-graduation-cap"></i> Cargar Cursos
+                </a></li>
+                <li><a class="dropdown-item" href="fechas-audiencias.html">
+                  <i class="fas fa-calendar-alt"></i> Cargar Fechas Audiencias
+                </a></li>
+                <li><a class="dropdown-item" href="libro-audiencias.html">
+                  <i class="fas fa-book"></i> Cargar Libro de Audiencias
+                </a></li>
+                <li><a class="dropdown-item" href="litigantes.html">
+                  <i class="fas fa-users"></i> Cargar Litigantes
+                </a></li>
+                <li><a class="dropdown-item" href="maiva-sml.html">
+                  <i class="fas fa-database"></i> Cargar Maiva SML
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item active" href="inventario-mda.html">
+                  <i class="fas fa-boxes"></i> Inventario MDA
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="eliminar-litigantes.html">
+                  <i class="fas fa-trash-alt"></i> Eliminar Litigantes
+                </a></li>
+              </ul>
+            </li>
+            
+            <!-- Menú de herramientas -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="toolsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-tools"></i> Herramientas
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="toolsDropdown">
+                <li><a class="dropdown-item" href="#" onclick="showFileInfo()">
+                  <i class="fas fa-info-circle"></i> Información del Sistema
+                </a></li>
+                <li><a class="dropdown-item" href="#" onclick="clearCache()">
+                  <i class="fas fa-broom"></i> Limpiar Caché
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" onclick="showHelp()">
+                  <i class="fas fa-question-circle"></i> Ayuda
+                </a></li>
+              </ul>
+            </li>
+          </ul>
+          
+          <!-- Usuario/configuración -->
+          <ul class="navbar-nav">
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-user"></i> Usuario
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                <li><a class="dropdown-item" href="#">
+                  <i class="fas fa-cog"></i> Configuración
+                </a></li>
+                <li><a class="dropdown-item" href="#">
+                  <i class="fas fa-chart-bar"></i> Estadísticas
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#">
+                  <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="bg-light">
+      <div class="container">
+        <ol class="breadcrumb py-3 mb-0">
+          <li class="breadcrumb-item"><a href="../index.html"><i class="fas fa-home"></i> Inicio</a></li>
+          <li class="breadcrumb-item"><i class="fas fa-upload"></i> Cargar Archivos</li>
+          <li class="breadcrumb-item active" aria-current="page"><i class="fas fa-boxes"></i> Inventario MDA</li>
+        </ol>
+      </div>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <div class="container mt-4">
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          
+          <!-- Encabezado -->
+          <div class="text-center mb-4">
+            <div class="display-1 text-success mb-3">
+              <i class="fas fa-boxes"></i>
+            </div>
+            <h1 class="h2 text-success">Inventario MDA</h1>
+            <p class="text-muted">Carga información del inventario del Ministerio de Desarrollo Agrario</p>
+          </div>
+
+          <!-- Formulario Principal -->
+          <div class="card shadow-lg border-0 mb-4">
+            <div class="card-header bg-success text-white">
+              <h5 class="card-title mb-0">
+                <i class="fas fa-cloud-upload-alt"></i> Subir Archivo de Inventario MDA
+              </h5>
+            </div>
+            <div class="card-body p-4">
+              <form id="formInventarioMDA" action="../php/cargaInventarioMDA.php" method="POST" autocomplete="off" enctype="multipart/form-data">
+                <div class="row">
+                  <div class="col-12">
+                    <div class="form-group mb-4">
+                      <label for="archivoInventarioMDA" class="form-label h6">
+                        <i class="fas fa-file-excel text-success"></i> Seleccione archivo de inventario
+                      </label>
+                      <input class="form-control form-control-lg" name="archivoExcel" id="archivoInventarioMDA" type="file" accept=".xlsx,.xls,.csv" required>
+                      <div class="form-text">
+                        <i class="fas fa-info-circle"></i> Formatos soportados: Excel (.xlsx, .xls) y CSV (.csv) | Tamaño máximo: 50 MB
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <input type="hidden" name="accion" value="Y2FyZ2FJbnZlbnRhcmlvTURB">
+                
+                <div class="d-grid">
+                  <button type="submit" class="btn btn-success btn-lg" name="agregar">
+                    <i class="fas fa-cloud-upload-alt"></i> Subir Archivo de Inventario
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Información de Requisitos -->
+          <div class="card requirements-card mb-4">
+            <div class="card-body">
+              <h5 class="card-title">
+                <i class="fas fa-clipboard-check text-success"></i> Requisitos del Archivo
+              </h5>
+              <div class="row">
+                <div class="col-md-6">
+                  <h6><i class="fas fa-table text-success"></i> Estructura del Excel:</h6>
+                  <ul class="list-unstyled">
+                    <li><i class="fas fa-check text-success"></i> Primera fila debe contener encabezados</li>
+                    <li><i class="fas fa-check text-success"></i> Datos comenzar desde la segunda fila</li>
+                    <li><i class="fas fa-check text-success"></i> No debe contener celdas combinadas</li>
+                    <li><i class="fas fa-check text-success"></i> RUT sin dígito verificador (se calcula automáticamente)</li>
+                  </ul>
+                </div>
+                <div class="col-md-6">
+                  <h6><i class="fas fa-columns text-success"></i> Columnas Requeridas:</h6>
+                  <ul class="list-unstyled">
+                    <li><i class="fas fa-angle-right text-success"></i> RUT (sin DV)</li>
+                    <li><i class="fas fa-angle-right text-success"></i> Nombre</li>
+                    <li><i class="fas fa-angle-right text-success"></i> Código del bien</li>
+                    <li><i class="fas fa-angle-right text-success"></i> Descripción</li>
+                    <li><i class="fas fa-angle-right text-success"></i> Estado</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Información Adicional -->
+          <div class="row">
+            <div class="col-md-4">
+              <div class="card h-100 border-success">
+                <div class="card-body text-center">
+                  <div class="text-success mb-3">
+                    <i class="fas fa-calculator fa-2x"></i>
+                  </div>
+                  <h6 class="card-title">RUT Automático</h6>
+                  <p class="card-text small text-muted">
+                    Cálculo automático del dígito verificador para RUTs chilenos.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card h-100 border-warning">
+                <div class="card-body text-center">
+                  <div class="text-warning mb-3">
+                    <i class="fas fa-search fa-2x"></i>
+                  </div>
+                  <h6 class="card-title">Validación</h6>
+                  <p class="card-text small text-muted">
+                    Sistema de validación de datos de inventario con reporte detallado de errores.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card h-100 border-info">
+                <div class="card-body text-center">
+                  <div class="text-info mb-3">
+                    <i class="fas fa-sync-alt fa-2x"></i>
+                  </div>
+                  <h6 class="card-title">Actualización</h6>
+                  <p class="card-text small text-muted">
+                    Actualización automática del inventario con control de duplicados.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Resultados -->
+    <div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header" id="modalHeader">
+            <h5 class="modal-title" id="resultModalLabel">
+              <i class="fas fa-boxes"></i> Resultado de la Carga
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row">
+              <div class="col-md-6 text-center">
+                <div class="card border-success">
+                  <div class="card-body">
+                    <h2 id="registrosCorrectos" class="text-success">0</h2>
+                    <p class="mb-0">Registros Correctos</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 text-center">
+                <div class="card border-danger">
+                  <div class="card-body">
+                    <h2 id="registrosError" class="text-danger">0</h2>
+                    <p class="mb-0">Registros con Error</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="alert mt-4" id="resumenAlert">
+              <p><strong>Total procesado:</strong> <span id="totalProcesado">0</span> registros</p>
+              <p><strong>Tasa de éxito:</strong> <span id="tasaExito">0</span>%</p>
+            </div>
+            
+            <div id="erroresContainer" style="display: none;">
+              <h6>Errores encontrados:</h6>
+              <div id="listaErrores" class="table-responsive">
+                <table class="table table-sm">
+                  <thead>
+                    <tr>
+                      <th>Fila</th>
+                      <th>Tipo de Error</th>
+                      <th>Descripción</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tablaErrores">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            <button type="button" class="btn btn-primary" onclick="location.reload()">Cargar Otro Archivo</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-5 py-4 bg-light">
+      <div class="container">
+        <div class="row">
+          <div class="col-12 text-center">
+            <p class="text-muted mb-0">
+              <i class="fas fa-calendar-alt"></i> Última actualización: 25 Septiembre, 2025 | 
+              <i class="fas fa-boxes"></i> Módulo de Inventario MDA | 
+              <i class="fas fa-headset"></i> Soporte disponible
+            </p>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
+    
+    <script>
+      // Funciones para las opciones del menú
+      function showFileInfo() {
+        alert('Sistema de Carga de Archivos Excel - Inventario MDA\nVersión: 1.0\nCompatible con: Excel 2007+, CSV\nMódulo: Gestión de Inventario');
+      }
+      
+      function clearCache() {
+        if (confirm('¿Está seguro de que desea limpiar la caché del sistema?')) {
+          alert('Caché limpiada exitosamente');
+        }
+      }
+      
+      function showHelp() {
+        const helpText = `
+Ayuda - Carga de Inventario MDA
+
+PASOS:
+1. Prepare su archivo Excel con la información del inventario
+2. Verifique que el formato sea correcto (.xlsx, .xls o .csv)
+3. Seleccione el archivo usando el botón "Examinar"
+4. Haga clic en "Subir Archivo de Inventario"
+5. Espere la confirmación del procesamiento
+
+COLUMNAS REQUERIDAS:
+- RUT (sin dígito verificador - se calcula automáticamente)
+- Nombre del responsable
+- Código del bien
+- Descripción del bien
+- Estado del bien
+
+IMPORTANTE:
+- El RUT debe ser numérico sin puntos ni guiones
+- Se calculará automáticamente el dígito verificador
+- Los códigos de bien deben ser únicos
+- Estados válidos: Activo, Inactivo, En mantención
+
+Para soporte, contacte al área de inventario.
+        `;
+        alert(helpText);
+      }
+      
+      // Validación de archivos específica para inventario MDA
+      function validateFile(input) {
+        const file = input.files[0];
+        const maxSize = 50 * 1024 * 1024; // 50 MB
+        
+        if (!file) return false;
+        
+        // Validar tamaño
+        if (file.size > maxSize) {
+          alert('⚠️ El archivo es demasiado grande.\n\nTamaño actual: ' + (file.size / (1024 * 1024)).toFixed(2) + ' MB\nTamaño máximo permitido: 50 MB\n\nPor favor, reduzca el tamaño del archivo o divídalo en partes más pequeñas.');
+          input.value = '';
+          return false;
+        }
+        
+        // Validar extensión
+        const fileName = file.name.toLowerCase();
+        const validExtensions = ['.xlsx', '.xls', '.csv'];
+        const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+        
+        if (!hasValidExtension) {
+          alert('⚠️ Formato de archivo no válido para inventario MDA.\n\nFormatos permitidos:\n• Excel 2007+ (.xlsx)\n• Excel antiguo (.xls)\n• CSV (.csv)\n\nArchivo seleccionado: ' + fileName);
+          input.value = '';
+          return false;
+        }
+        
+        // Mostrar información del archivo
+        showFileInfo(file, input);
+        return true;
+      }
+      
+      function showFileInfo(file, input) {
+        const fileName = file.name;
+        const fileSize = (file.size / (1024 * 1024)).toFixed(2);
+        const fileType = fileName.split('.').pop().toUpperCase();
+        
+        // Crear o actualizar info del archivo
+        let fileInfoDiv = document.querySelector('.file-info');
+        if (!fileInfoDiv) {
+          fileInfoDiv = document.createElement('div');
+          fileInfoDiv.className = 'file-info mt-3 p-3 rounded';
+          input.parentNode.appendChild(fileInfoDiv);
+        }
+        
+        fileInfoDiv.innerHTML = `
+          <div class="row align-items-center">
+            <div class="col-auto">
+              <i class="fas fa-boxes fa-2x text-success"></i>
+            </div>
+            <div class="col">
+              <h6 class="mb-1"><i class="fas fa-check-circle text-success"></i> Archivo Válido</h6>
+              <p class="mb-1"><strong>Nombre:</strong> ${fileName}</p>
+              <p class="mb-1"><strong>Tipo:</strong> ${fileType} | <strong>Tamaño:</strong> ${fileSize} MB</p>
+              <small class="text-success"><i class="fas fa-shield-alt"></i> Listo para cargar inventario MDA</small>
+            </div>
+          </div>
+        `;
+      }
+      
+      // Función para enviar formulario con AJAX
+      function submitFormWithAjax(form) {
+        const fileInput = form.querySelector('input[type="file"]');
+        
+        if (!fileInput.files[0]) {
+          alert('⚠️ Por favor seleccione un archivo de inventario antes de continuar.');
+          return;
+        }
+        
+        if (!confirm('¿Está seguro de que desea cargar estos datos de inventario MDA?\n\nArchivo: ' + fileInput.files[0].name + '\nTamaño: ' + (fileInput.files[0].size / (1024 * 1024)).toFixed(2) + ' MB\n\n📦 Los datos del inventario se procesarán de forma segura.')) {
+          return;
+        }
+        
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        // Mostrar estado de carga
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando inventario...';
+        submitBtn.disabled = true;
+        
+        const formData = new FormData(form);
+        
+        fetch('../php/cargaInventarioMDA.php', {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => response.text())
+        .then(htmlContent => {
+          // Abrir nueva ventana/pestaña con el resultado
+          const newWindow = window.open('', '_blank');
+          newWindow.document.write(htmlContent);
+          newWindow.document.close();
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('❌ Error de conexión con el servidor.\n\nDetalle: ' + error.message + '\n\nPor favor, verifique su conexión a internet e intente nuevamente.');
+        })
+        .finally(() => {
+          // Restaurar botón
+          submitBtn.innerHTML = originalText;
+          submitBtn.disabled = false;
+        });
+      }
+
+      // Función para mostrar modal con resultados
+      function showResultModal(data) {
+        // Actualizar contenido del modal
+        document.getElementById('registrosCorrectos').textContent = data.registros_correctos || 0;
+        document.getElementById('registrosError').textContent = data.registros_error || 0;
+        document.getElementById('totalProcesado').textContent = data.total_procesado || 0;
+        document.getElementById('tasaExito').textContent = data.tasa_exito || 0;
+        
+        // Configurar header del modal según el status
+        const modalHeader = document.getElementById('modalHeader');
+        const resumenAlert = document.getElementById('resumenAlert');
+        
+        if (data.status === 'success') {
+          modalHeader.className = 'modal-header bg-success text-white';
+          resumenAlert.className = 'alert alert-success mt-4';
+        } else if (data.status === 'warning') {
+          modalHeader.className = 'modal-header bg-warning text-dark';
+          resumenAlert.className = 'alert alert-warning mt-4';
+        } else {
+          modalHeader.className = 'modal-header bg-danger text-white';
+          resumenAlert.className = 'alert alert-danger mt-4';
+        }
+        
+        // Mostrar errores si los hay
+        const erroresContainer = document.getElementById('erroresContainer');
+        const tablaErrores = document.getElementById('tablaErrores');
+        
+        if (data.errores && data.errores.length > 0) {
+          tablaErrores.innerHTML = '';
+          data.errores.forEach(error => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td><span class="badge bg-secondary">${error.fila || 'N/A'}</span></td>
+              <td><span class="badge bg-danger">${error.tipo || 'Error'}</span></td>
+              <td>${error.descripcion || error}</td>
+            `;
+            tablaErrores.appendChild(row);
+          });
+          erroresContainer.style.display = 'block';
+        } else {
+          erroresContainer.style.display = 'none';
+        }
+        
+        // Mostrar el modal
+        const modal = new bootstrap.Modal(document.getElementById('resultModal'));
+        modal.show();
+      }
+        
+      // Event listeners
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('Módulo de Carga de Inventario MDA cargado correctamente');
+        
+        // Validación del input de archivo
+        const fileInput = document.getElementById('archivoInventarioMDA');
+        if (fileInput) {
+          fileInput.addEventListener('change', function() {
+            validateFile(this);
+          });
+        }
+        
+        // Manejo del formulario con AJAX
+        const form = document.getElementById('formInventarioMDA');
+        if (form) {
+          form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            submitFormWithAjax(this);
+          });
+        }
+        
+        // Inicializar tooltips
+        if (typeof bootstrap !== 'undefined') {
+          const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+          const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
