@@ -18,6 +18,8 @@ header('Content-Type: text/html; charset=utf-8');
  * @param string $rut - RUT sin dígito verificador (solo números)
  * @return string - RUT completo con formato xxxxxxxx-y
  */
+
+// líneas 21 a 38
 function calcularDigitoVerificadorRUT($rut)
 {
     // Limpiar RUT (quitar puntos, guiones, espacios)
@@ -51,8 +53,8 @@ function calcularDigitoVerificadorRUT($rut)
         $dv = 'K';
     }
 
-    // Formatear RUT chileno
-    return number_format($rut, 0, '', '.') . '-' . $dv;
+    // Formatear RUT chileno SIN puntos
+    return $rut . '-' . $dv;
 }
 
 /**
