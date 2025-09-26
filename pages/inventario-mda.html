@@ -496,7 +496,7 @@ Para soporte, contacte al área de inventario.
         const originalText = submitBtn.innerHTML;
         
         // Mostrar estado de carga
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando inventario...';
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Trabajando...';
         submitBtn.disabled = true;
         
         const formData = new FormData(form);
@@ -505,16 +505,21 @@ Para soporte, contacte al área de inventario.
           method: 'POST',
           body: formData
         })
-        .then(response => response.text())
-        .then(htmlContent => {
-          // Abrir nueva ventana/pestaña con el resultado
-          const newWindow = window.open('', '_blank');
-          newWindow.document.write(htmlContent);
-          newWindow.document.close();
+        .then(response => response.json())
+        .then(data => {
+          showResultModal(data);
         })
         .catch(error => {
           console.error('Error:', error);
-          alert('❌ Error de conexión con el servidor.\n\nDetalle: ' + error.message + '\n\nPor favor, verifique su conexión a internet e intente nuevamente.');
+          showResultModal({
+            status: 'error',
+            message: 'Error de conexión con el servidor. Por favor, verifique su conexión a internet.',
+            registros_correctos: 0,
+            registros_error: 1,
+            total_procesado: 0,
+            tasa_exito: 0,
+            errores: [{fila: 'N/A', tipo: 'Conexión', descripcion: error.message}]
+          });
         })
         .finally(() => {
           // Restaurar botón
