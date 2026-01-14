@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Analizar Tipos de Datos</title>
+</head>
+<body>
+    <h1>Test - Funcionalidad Analizar Tipos de Datos</h1>
+    
+    <h2>Componentes Creados:</h2>
+    <ul>
+        <li>✅ <strong>Página HTML:</strong> pages/analizar-tipos-datos.html (526 líneas)</li>
+        <li>✅ <strong>Script PHP:</strong> php/analizarTiposDatos.php (281 líneas)</li>
+        <li>✅ <strong>Documentación:</strong> GUIA_ANALIZAR_TIPOS_DATOS.md</li>
+        <li>✅ <strong>Menú actualizado:</strong> index.html (agregar opción al menú)</li>
+    </ul>
+
+    <h2>Características Implementadas:</h2>
+    <ol>
+        <li><strong>Carga de archivos Excel:</strong> Soporta .xls, .xlsx y .csv</li>
+        <li><strong>Análisis de tipos de datos:</strong> Detecta automáticamente:
+            <ul>
+                <li>String (Texto)</li>
+                <li>Integer (Números enteros)</li>
+                <li>Float (Números decimales)</li>
+                <li>Date (Fechas en múltiples formatos)</li>
+                <li>Boolean (Verdadero/Falso)</li>
+                <li>Empty (Celdas vacías)</li>
+                <li>Mixed (Tipos inconsistentes)</li>
+            </ul>
+        </li>
+        <li><strong>Límites:</strong> Máximo 20 columnas (A-T), comienza en A1</li>
+        <li><strong>Interfaz:</strong> Tabla interactiva con colores para cada tipo</li>
+        <li><strong>Estadísticas:</strong> Resumen de análisis (total celdas, filas, columnas)</li>
+        <li><strong>Exportación:</strong> Descargar resultados en CSV</li>
+    </ol>
+
+    <h2>Detección de Tipos:</h2>
+    <table border="1" cellpadding="10">
+        <tr>
+            <th>Tipo</th>
+            <th>Ejemplos</th>
+            <th>Detecta</th>
+        </tr>
+        <tr>
+            <td>String</td>
+            <td>"Nombre", "Texto"</td>
+            <td>Cualquier texto normal</td>
+        </tr>
+        <tr>
+            <td>Integer</td>
+            <td>123, 456, 789</td>
+            <td>Números enteros</td>
+        </tr>
+        <tr>
+            <td>Float</td>
+            <td>123.45, 678.90</td>
+            <td>Números decimales</td>
+        </tr>
+        <tr>
+            <td>Date</td>
+            <td>01/01/2020, 2020-01-01</td>
+            <td>Múltiples formatos de fechas</td>
+        </tr>
+        <tr>
+            <td>Boolean</td>
+            <td>TRUE, FALSE, SI, NO</td>
+            <td>Valores lógicos</td>
+        </tr>
+        <tr>
+            <td>Empty</td>
+            <td>(vacío)</td>
+            <td>Celdas sin contenido</td>
+        </tr>
+    </table>
+
+    <h2>Acceso:</h2>
+    <ul>
+        <li>Desde el menú: Cargar Archivos → Analizar Tipos de Datos</li>
+        <li>URL directa: pages/analizar-tipos-datos.html</li>
+    </ul>
+
+    <h2>Requisitos Técnicos:</h2>
+    <ul>
+        <li>PHP con PHPExcel instalado</li>
+        <li>Navegador moderno (Bootstrap 5.3.3)</li>
+        <li>JavaScript habilitado</li>
+        <li>Máximo 50MB por archivo</li>
+    </ul>
+
+    <h2>Próximos Pasos (Opcional):</h2>
+    <ul>
+        <li>Crear archivo de prueba para validación</li>
+        <li>Agregar más opciones de análisis</li>
+        <li>Integración con base de datos para historial</li>
+    </ul>
+</body>
+</html>

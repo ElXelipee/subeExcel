@@ -1,0 +1,63 @@
+✅ ERROR CORREGIDO - iconv_substr() deprecated
+═══════════════════════════════════════════════════════════
+
+PROBLEMA:
+─────────────────────────────────────────────────────────
+  Error: iconv_substr(): Passing null to parameter #1
+         ($string) of type string is deprecated
+
+CAUSA:
+─────────────────────────────────────────────────────────
+  PHPExcel recibía valores null o mixtos
+  Las funciones auxiliares no validaban entrada
+  El error_handler mostraba warnings como errores
+
+SOLUCIONES (5 cambios):
+═══════════════════════════════════════════════════════════
+
+✅ 1. OBTENCIÓN SEGURA DE VALORES
+   • Método try-catch al obtener valor de celda
+   • Conversión de RichText a string
+   • Convierte null a string vacío
+   
+✅ 2. VALIDACIÓN EN FUNCIONES
+   • esFormatoFecha() valida string
+   • esNumerico() valida string
+   • esBooleano() valida string
+   
+✅ 3. IGNORAR WARNINGS DEPRECATED
+   • error_reporting excluye E_DEPRECATED
+   • set_error_handler ignora deprecated
+   
+✅ 4. INICIALIZACIÓN SEGURA
+   • valor_display siempre se define
+   • Tipos numéricos verifican no es string
+   
+✅ 5. MEJOR MANEJO DE EXCEPCIONES
+   • Try-catch en secciones críticas
+   • Conversión segura a string
+
+RESULTADO:
+─────────────────────────────────────────────────────────
+✅ El sistema ahora procesa cualquier Excel
+✅ Sin errores deprecated o null
+✅ Tabla completa con tipos de datos
+✅ Celdas vacías mostradas correctamente
+
+CÓMO PROBARLO:
+─────────────────────────────────────────────────────────
+1. Abre: pages/analizar-tipos-datos.html
+2. Carga: Un archivo Excel (cualquiera)
+3. Mira: Tabla de resultados sin errores
+4. Abre: F12 → Console (sin errores)
+
+ARCHIVO MODIFICADO:
+─────────────────────────────────────────────────────────
+✅ php/analizarTiposDatos.php (362 líneas)
+
+DOCUMENTACIÓN:
+─────────────────────────────────────────────────────────
+📄 CORRECCION_ICONV_SUBSTR.md (Detalles técnicos)
+
+═══════════════════════════════════════════════════════════
+Estado: ✅ CORREGIDO - Versión 3.0

@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Analizar Tipos de Datos - Cargador Excel</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .navbar-brand {
+        font-weight: bold;
+      }
+      .dropdown-item:hover {
+        background-color: #f8f9fa;
+      }
+      .dropdown-item.text-danger:hover {
+        background-color: #f8d7da;
+      }
+      
+      .card {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+      }
+      
+      .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+      }
+      
+      .form-control:focus {
+        border-color: var(--bs-primary);
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+      }
+      
+      .uploading {
+        opacity: 0.7;
+        pointer-events: none;
+      }
+      
+      .file-info {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-left: 4px solid #007bff;
+      }
+      
+      .requirements-card {
+        background: linear-gradient(135deg, #fff3cd 0%, #fef7e3 100%);
+        border-left: 4px solid #ffc107;
+      }
+
+      /* Estilos para tabla de resultados */
+      .data-type-badge {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.7rem;
+        border-radius: 4px;
+      }
+
+      .type-string {
+        background-color: #d1ecf1;
+        color: #0c5460;
+      }
+
+      .type-integer {
+        background-color: #d4edda;
+        color: #155724;
+      }
+
+      .type-float {
+        background-color: #cfe2ff;
+        color: #084298;
+      }
+
+      .type-date {
+        background-color: #fff3cd;
+        color: #664d03;
+      }
+
+      .type-time {
+        background-color: #ffe5d0;
+        color: #854d0e;
+      }
+
+      .type-boolean {
+        background-color: #e7d4f5;
+        color: #3d2645;
+      }
+
+      .type-empty {
+        background-color: #e2e3e5;
+        color: #383d41;
+      }
+
+      .type-mixed {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+
+      .type-formula {
+        background-color: #eee;
+        color: #333;
+        border: 1px dashed #999;
+      }
+
+      .type-error {
+        background-color: #000;
+        color: #fff;
+      }
+
+      .results-container {
+        max-height: 700px;
+        overflow: auto;
+        border: 1px solid #dee2e6;
+        background-color: #f8f9fa;
+        position: relative;
+      }
+
+      .excel-grid {
+        border-collapse: separate;
+        border-spacing: 0;
+        table-layout: fixed;
+        width: auto;
+      }
+
+      .excel-grid th, .excel-grid td {
+        border: 1px solid #dee2e6;
+        padding: 5px;
+        min-width: 100px;
+        max-width: 180px;
+        text-align: center;
+        background-color: white;
+      }
+
+      .excel-grid th {
+        background-color: #f1f3f4;
+        font-weight: bold;
+        color: #5f6368;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        min-width: 40px;
+      }
+
+      .excel-grid th.row-index {
+        left: 0;
+        z-index: 20;
+      }
+
+      .excel-grid td.row-index {
+        background-color: #f1f3f4;
+        font-weight: bold;
+        color: #5f6368;
+        position: sticky;
+        left: 0;
+        z-index: 5;
+        min-width: 40px;
+      }
+
+      .excel-grid .data-type-badge {
+        display: block;
+        width: 100%;
+        margin: 0;
+        padding: 2px 4px;
+        font-size: 0.75rem;
+      }
+
+      .excel-cell-content {
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .cell-value-preview {
+        display: none;
+        position: absolute;
+        background: white;
+        border: 1px solid #ccc;
+        padding: 5px;
+        border-radius: 4px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        z-index: 100;
+        max-width: 250px;
+        word-break: break-all;
+        font-size: 0.8rem;
+      }
+
+      .excel-grid td:hover .cell-value-preview {
+        display: block;
+      }
+
+      .cell-value {
+        max-width: 150px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .summary-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+
+      .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 8px;
+        text-align: center;
+      }
+
+      .stat-value {
+        font-size: 1.8rem;
+        font-weight: bold;
+      }
+
+      .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="../index.html">
+          <i class="fas fa-file-excel"></i> Cargador Excel
+        </a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav me-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="../index.html">
+                <i class="fas fa-home"></i> Inicio
+              </a>
+            </li>
+            
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle active" href="#" id="cargaDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-upload"></i> Cargar Archivos
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="cargaDropdown">
+                <li><a class="dropdown-item" href="caratula.html">
+                  <i class="fas fa-file-alt"></i> Cargar Carátula
+                </a></li>
+                <li><a class="dropdown-item" href="cursos.html">
+                  <i class="fas fa-graduation-cap"></i> Cargar Cursos
+                </a></li>
+                <li><a class="dropdown-item" href="fechas-audiencias.html">
+                  <i class="fas fa-calendar-alt"></i> Cargar Fechas Audiencias
+                </a></li>
+                <li><a class="dropdown-item" href="libro-audiencias.html">
+                  <i class="fas fa-book"></i> Cargar Libro de Audiencias
+                </a></li>
+                <li><a class="dropdown-item" href="litigantes.html">
+                  <i class="fas fa-users"></i> Cargar Litigantes
+                </a></li>
+                <li><a class="dropdown-item" href="maiva-sml.html">
+                  <i class="fas fa-database"></i> Cargar Maiva SML
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item active" href="analizar-tipos-datos.html">
+                  <i class="fas fa-magnifying-glass"></i> Analizar Tipos de Datos
+                </a></li>
+                <li><a class="dropdown-item text-danger" href="eliminar-litigantes.html">
+                  <i class="fas fa-trash-alt"></i> Eliminar Litigantes
+                </a></li>
+              </ul>
+            </li>
+          </ul>
+          
+          <ul class="navbar-nav">
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-user"></i> Usuario
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                <li><a class="dropdown-item" href="#">
+                  <i class="fas fa-cog"></i> Configuración
+                </a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <div class="container my-5">
+      <div class="row">
+        <div class="col-12">
+          <h1 class="mb-4">
+            <i class="fas fa-magnifying-glass"></i> Analizar Tipos de Datos - Excel
+          </h1>
+        </div>
+      </div>
+
+      <!-- Formulario de carga -->
+      <div class="row mb-4">
+        <div class="col-md-8">
+          <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+              <h5 class="mb-0"><i class="fas fa-upload"></i> Cargar Archivo Excel</h5>
+            </div>
+            <div class="card-body">
+              <form id="uploadForm" enctype="multipart/form-data">
+                <div class="mb-3">
+                  <label for="fileInput" class="form-label">
+                    <i class="fas fa-file"></i> Seleccionar archivo Excel
+                  </label>
+                  <input
+                    type="file"
+                    class="form-control form-control-lg"
+                    id="fileInput"
+                    name="archivoExcel"
+                    accept=".xls,.xlsx,.csv"
+                    required
+                  />
+                  <small class="text-muted">
+                    Formatos soportados: .xls, .xlsx, .csv (Máximo 50MB)
+                  </small>
+                </div>
+
+                <div class="mb-3">
+                  <label for="sheetSelect" class="form-label">
+                    <i class="fas fa-sheet"></i> Hoja de cálculo (opcional)
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="sheetSelect"
+                    placeholder="Nombre de la hoja (ej: Sheet1, Datos)"
+                  />
+                  <small class="text-muted">
+                    Dejar vacío para usar la primera hoja
+                  </small>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg w-100">
+                  <i class="fas fa-search"></i> Analizar Tipos de Datos
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Requisitos -->
+        <div class="col-md-4">
+          <div class="card requirements-card shadow-sm">
+            <div class="card-header bg-warning">
+              <h5 class="mb-0"><i class="fas fa-info-circle"></i> Requisitos</h5>
+            </div>
+            <div class="card-body">
+              <ul class="list-unstyled">
+                <li class="mb-2">
+                  <i class="fas fa-check text-success"></i> Archivo Excel válido
+                </li>
+                <li class="mb-2">
+                  <i class="fas fa-check text-success"></i> Máximo 20 columnas
+                </li>
+                <li class="mb-2">
+                  <i class="fas fa-check text-success"></i> Comienza desde celda A1
+                </li>
+                <li class="mb-2">
+                  <i class="fas fa-check text-success"></i> Tamaño máximo: 50MB
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Spinner de carga -->
+      <div id="loadingSpinner" class="spinner-container" style="display: none; text-align: center; margin: 2rem 0;">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Cargando...</span>
+        </div>
+        <p class="mt-2 text-muted">Analizando archivo Excel...</p>
+      </div>
+
+      <!-- Contenedor de resultados -->
+      <div id="resultsContainer" style="display: none;">
+        <!-- Estadísticas resumen -->
+        <div id="summaryStats" class="summary-stats mb-4"></div>
+
+        <!-- Tabla de resultados -->
+        <div class="card shadow-sm">
+          <div class="card-header bg-success text-white">
+            <h5 class="mb-0">
+              <i class="fas fa-table"></i> Análisis de Tipos de Datos
+            </h5>
+          </div>
+          <div class="card-body p-0">
+            <div class="results-container">
+              <div id="excelGridContainer">
+                <table class="excel-grid" id="resultsTable">
+                  <thead id="resultsHead"></thead>
+                  <tbody id="resultsBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="mt-4 text-center">
+          <button class="btn btn-secondary" onclick="document.getElementById('resultsContainer').style.display='none'; location.reload();">
+            <i class="fas fa-sync"></i> Cargar Otro Archivo
+          </button>
+          <button class="btn btn-info" onclick="exportResults()">
+            <i class="fas fa-download"></i> Descargar Resultados
+          </button>
+        </div>
+      </div>
+
+      <!-- Mensajes de error -->
+      <div id="alertContainer"></div>
+    </div>
+
+    <!-- Modal de información -->
+    <div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="infoModalLabel">Información de Tipos de Datos</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <h6>Tipos de Datos Soportados:</h6>
+            <ul class="list-unstyled">
+              <li><span class="data-type-badge type-string">String</span> - Texto</li>
+              <li><span class="data-type-badge type-integer">Integer</span> - Número entero</li>
+              <li><span class="data-type-badge type-float">Float</span> - Número decimal</li>
+              <li><span class="data-type-badge type-date">Date</span> - Fecha</li>
+              <li><span class="data-type-badge type-time">Time</span> - Hora</li>
+              <li><span class="data-type-badge type-boolean">Boolean</span> - Verdadero/Falso (Lógico real)</li>
+              <li><span class="data-type-badge type-formula">Formula</span> - Fórmula de Excel</li>
+              <li><span class="data-type-badge type-error">Error</span> - Error de celda (ej: #DIV/0!)</li>
+              <li><span class="data-type-badge type-empty">Empty</span> - Celda vacía</li>
+              <li><span class="data-type-badge type-mixed">Mixed</span> - Tipo inconsistente</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const fileInput = document.getElementById('fileInput');
+        const sheetSelect = document.getElementById('sheetSelect');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const alertContainer = document.getElementById('alertContainer');
+        
+        // Limpiar alertas previas
+        alertContainer.innerHTML = '';
+        resultsContainer.style.display = 'none';
+        
+        // Validar archivo
+        if (!fileInput.files.length) {
+          showAlert('error', 'Por favor selecciona un archivo');
+          return;
+        }
+        
+        // Mostrar spinner
+        loadingSpinner.style.display = 'block';
+        
+        // Preparar FormData
+        const formData = new FormData();
+        formData.append('archivoExcel', fileInput.files[0]);
+        if (sheetSelect.value) {
+          formData.append('hoja', sheetSelect.value);
+        }
+        
+        try {
+          const response = await fetch('../php/analizarTiposDatos.php', {
+            method: 'POST',
+            body: formData
+          });
+          
+          loadingSpinner.style.display = 'none';
+          
+          // Verificar que la respuesta sea texto y pueda ser parseado como JSON
+          const responseText = await response.text();
+          console.log('Response status:', response.status);
+          console.log('Response text:', responseText);
+          
+          if (!responseText) {
+            showAlert('error', 'El servidor no respondió. Por favor intenta nuevamente.');
+            return;
+          }
+          
+          let data;
+          try {
+            data = JSON.parse(responseText);
+          } catch (parseError) {
+            console.error('JSON Parse Error:', parseError);
+            console.error('Response text:', responseText);
+            showAlert('error', 'Error al procesar la respuesta del servidor. Verifica la consola para más detalles.');
+            return;
+          }
+          
+          if (data.status === 'success') {
+            displayResults(data.datos, data.resumen);
+            resultsContainer.style.display = 'block';
+          } else {
+            showAlert('error', data.message || 'Error al analizar el archivo');
+          }
+        } catch (error) {
+          loadingSpinner.style.display = 'none';
+          console.error('Fetch error:', error);
+          showAlert('error', 'Error de conexión: ' + error.message);
+        }
+      });
+      
+      function showAlert(type, message) {
+        const alertContainer = document.getElementById('alertContainer');
+        const alertClass = type === 'error' ? 'alert-danger' : 'alert-' + type;
+        const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
+        
+        alertContainer.innerHTML = `
+          <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+            <i class="fas ${icon}"></i> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        `;
+      }
+      
+      function displayResults(datos, resumen) {
+        const resultsHead = document.getElementById('resultsHead');
+        const resultsBody = document.getElementById('resultsBody');
+        const summaryStats = document.getElementById('summaryStats');
+        
+        resultsHead.innerHTML = '';
+        resultsBody.innerHTML = '';
+        summaryStats.innerHTML = '';
+        
+        // Mostrar estadísticas
+        if (resumen) {
+          summaryStats.innerHTML = `
+            <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+              <div class="stat-value">${resumen.total_celdas || 0}</div>
+              <div class="stat-label">Total de Celdas</div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+              <div class="stat-value">${resumen.filas || 0}</div>
+              <div class="stat-label">Filas Analizadas</div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+              <div class="stat-value">${resumen.columnas || 0}</div>
+              <div class="stat-label">Columnas Analizadas</div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+              <div class="stat-value">${resumen.celdas_vacias || 0}</div>
+              <div class="stat-label">Celdas Vacías</div>
+            </div>
+          `;
+        }
+        
+        // Mostrar datos en modo grid (estilo Excel)
+        if (datos && datos.length > 0) {
+          // Organizar datos por filas y columnas
+          const grid = {};
+          const cols = new Set();
+          const rows = new Set();
+          
+          datos.forEach(celda => {
+            if (!grid[celda.fila]) grid[celda.fila] = {};
+            grid[celda.fila][celda.columna] = celda;
+            cols.add(celda.columna);
+            rows.add(celda.fila);
+          });
+          
+          // Ordenar columnas y filas
+          const sortedCols = Array.from(cols).sort((a, b) => {
+            if (a.length !== b.length) return a.length - b.length;
+            return a.localeCompare(b);
+          });
+          const sortedRows = Array.from(rows).sort((a, b) => a - b);
+          
+          // Crear encabezado (Letras de columnas)
+          const headerRow = document.createElement('tr');
+          headerRow.innerHTML = '<th class="row-index"></th>'; // Esquina superior izquierda vacía
+          sortedCols.forEach(col => {
+            const th = document.createElement('th');
+            th.textContent = col;
+            headerRow.appendChild(th);
+          });
+          resultsHead.appendChild(headerRow);
+          
+          // Crear filas
+          sortedRows.forEach(rowIdx => {
+            const tr = document.createElement('tr');
+            
+            // Celda de índice de fila
+            const thRow = document.createElement('td');
+            thRow.className = 'row-index';
+            thRow.textContent = rowIdx;
+            tr.appendChild(thRow);
+            
+            // Celdas de datos
+            sortedCols.forEach(colLetter => {
+              const td = document.createElement('td');
+              const cellData = grid[rowIdx][colLetter];
+              
+              if (cellData) {
+                const badgeClass = `type-${cellData.tipo_dato.toLowerCase().replace(' ', '-')}`;
+                td.innerHTML = `
+                  <div class="excel-cell-content">
+                    <span class="data-type-badge ${badgeClass}" title="${cellData.detalles || cellData.tipo_dato}">
+                      ${cellData.tipo_dato}
+                    </span>
+                    <div class="cell-value-preview">
+                      <strong>Valor:</strong> ${escapeHtml(cellData.valor) || '<em>vacío</em>'}<br>
+                      <strong>Tipo:</strong> ${cellData.tipo_dato}<br>
+                      <strong>Detalles:</strong> ${cellData.detalles || '-'}
+                    </div>
+                  </div>
+                `;
+              } else {
+                td.innerHTML = '<div class="excel-cell-content"><span class="data-type-badge type-empty">Empty</span></div>';
+              }
+              tr.appendChild(td);
+            });
+            resultsBody.appendChild(tr);
+          });
+        }
+      }
+      
+      function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+      
+      function exportResults() {
+        const resultsHead = document.getElementById('resultsHead');
+        const resultsBody = document.getElementById('resultsBody');
+        
+        let csv = '';
+        
+        // Encabezados
+        const headerCells = resultsHead.querySelectorAll('th');
+        const headerTexts = Array.from(headerCells).map(cell => cell.textContent);
+        csv += headerTexts.join(',') + '\n';
+        
+        // Filas
+        resultsBody.querySelectorAll('tr').forEach(row => {
+          const rowData = [];
+          
+          // Primera celda (índice de fila)
+          rowData.push(row.querySelector('.row-index').textContent);
+          
+          // Celdas de tipo de dato
+          row.querySelectorAll('td:not(.row-index)').forEach(cell => {
+            const typeBadge = cell.querySelector('.data-type-badge');
+            rowData.push(typeBadge ? typeBadge.textContent.trim() : 'Empty');
+          });
+          
+          csv += rowData.join(',') + '\n';
+        });
+        
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `analisis-grid-excel-${new Date().getTime()}.csv`;
+        link.click();
+      }
+    </script>
+  </body>
+</html>
